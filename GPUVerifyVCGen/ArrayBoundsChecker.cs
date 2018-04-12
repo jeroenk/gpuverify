@@ -18,8 +18,8 @@ namespace GPUVerify
     {
         private static int arraySourceID = 0;
 
-        private GPUVerifier verifier;
-        private Dictionary<string, Tuple<string, int>> arraySizes;
+        private readonly GPUVerifier verifier;
+        private readonly Dictionary<string, Tuple<string, int>> arraySizes;
 
         private int currSourceLocNum = 0;
 
@@ -35,7 +35,7 @@ namespace GPUVerify
             this.arraySizes = GetBounds(program);
         }
 
-        public Dictionary<string, Tuple<string, int>> GetBounds(Program program)
+        public static Dictionary<string, Tuple<string, int>> GetBounds(Program program)
         {
             Dictionary<string, Tuple<string, int>> arraySizes = new Dictionary<string, Tuple<string, int>>();
 
@@ -91,7 +91,7 @@ namespace GPUVerify
             }
         }
 
-        private int ParseArraySize(string arraySize)
+        private static int ParseArraySize(string arraySize)
         {
             List<string> arrayDimensionSizes = new List<string>(arraySize.Split(','));
             int totalArraySize = 1;

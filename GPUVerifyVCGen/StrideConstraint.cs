@@ -202,19 +202,19 @@ namespace GPUVerify
             Eq = eq;
         }
 
-        public Expr Eq { get; private set; }
+        public Expr Eq { get; }
     }
 
     public class ModStrideConstraint : StrideConstraint
     {
         public ModStrideConstraint(Expr mod, Expr modEq)
         {
-            this.Mod = mod;
-            this.ModEq = modEq;
+            Mod = mod;
+            ModEq = modEq;
         }
 
-        public Expr Mod { get; private set; }
+        public Expr Mod { get; }
 
-        public Expr ModEq { get; private set; }
+        public Expr ModEq { get; }
     }
 }

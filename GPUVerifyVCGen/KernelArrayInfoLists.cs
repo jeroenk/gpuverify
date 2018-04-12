@@ -16,24 +16,13 @@ namespace GPUVerify
 
     public class KernelArrayInfoLists : IKernelArrayInfo
     {
-        private List<Variable> globalArrays;
-        private List<Variable> groupSharedArrays;
-        private List<Variable> constantArrays;
-        private List<Variable> privateArrays;
-        private List<Variable> readOnlyGlobalAndGroupSharedArrays;
-        private List<Variable> atomicallyAccessedArrays;
-        private List<Variable> disabledArrays;
-
-        public KernelArrayInfoLists()
-        {
-            globalArrays = new List<Variable>();
-            groupSharedArrays = new List<Variable>();
-            constantArrays = new List<Variable>();
-            privateArrays = new List<Variable>();
-            readOnlyGlobalAndGroupSharedArrays = new List<Variable>();
-            atomicallyAccessedArrays = new List<Variable>();
-            disabledArrays = new List<Variable>();
-        }
+        private readonly List<Variable> globalArrays = new List<Variable>();
+        private readonly List<Variable> groupSharedArrays = new List<Variable>();
+        private readonly List<Variable> constantArrays = new List<Variable>();
+        private readonly List<Variable> privateArrays = new List<Variable>();
+        private readonly List<Variable> readOnlyGlobalAndGroupSharedArrays = new List<Variable>();
+        private readonly List<Variable> atomicallyAccessedArrays = new List<Variable>();
+        private readonly List<Variable> disabledArrays = new List<Variable>();
 
         public IEnumerable<Variable> GetGlobalArrays(bool includeDisabled)
         {

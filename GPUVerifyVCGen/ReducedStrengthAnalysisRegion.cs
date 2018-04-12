@@ -22,9 +22,9 @@ namespace GPUVerify
 
     public class ReducedStrengthAnalysisRegion
     {
-        private Implementation impl;
-        private GPUVerifier verifier;
-        private Dictionary<object, Dictionary<string, ModStrideConstraint>> strideConstraintMap
+        private readonly Implementation impl;
+        private readonly GPUVerifier verifier;
+        private readonly Dictionary<object, Dictionary<string, ModStrideConstraint>> strideConstraintMap
             = new Dictionary<object, Dictionary<string, ModStrideConstraint>>();
 
         private ReducedStrengthAnalysisRegion(Implementation i, GPUVerifier v)
@@ -33,7 +33,7 @@ namespace GPUVerify
             verifier = v;
         }
 
-        private void AddAssignment(IRegion region, VarDefMap multiDefMap, SimpleAssignLhs lhs, Expr rhs)
+        private static void AddAssignment(IRegion region, VarDefMap multiDefMap, SimpleAssignLhs lhs, Expr rhs)
         {
             if (lhs == null)
                 return;
@@ -44,7 +44,7 @@ namespace GPUVerify
             multiDefMap[variable].Add(new Tuple<IRegion, Expr>(region, rhs));
         }
 
-        private void FindAssignments(IRegion region, VarDefMap multiDefMap)
+        private static void FindAssignments(IRegion region, VarDefMap multiDefMap)
         {
             foreach (var c in region.CmdsChildRegions())
             {
@@ -61,7 +61,7 @@ namespace GPUVerify
             }
         }
 
-        private bool OrderDefs(List<Tuple<IRegion, Expr>> defs, Graph<Block> cfg)
+        private static bool OrderDefs(List<Tuple<IRegion, Expr>> defs, Graph<Block> cfg)
         {
             if (defs[1].Item1.Header() == null)
                 defs.Reverse();
@@ -77,20 +77,20 @@ namespace GPUVerify
 
         private class StrideForm
         {
-            public StrideFormKind Kind { get; private set; }
+            public StrideFormKind Kind { get; }
 
-            public Expr Op { get; private set; }
+            public Expr Op { get; }
 
             public StrideForm(StrideFormKind kind)
             {
-                this.Kind = kind;
-                this.Op = null;
+                Kind = kind;
+                Op = null;
             }
 
             public StrideForm(StrideFormKind kind, Expr op)
             {
-                this.Kind = kind;
-                this.Op = op;
+                Kind = kind;
+                Op = op;
             }
 
             public enum StrideFormKind

@@ -15,15 +15,14 @@ namespace GPUVerify
 
     public class MayBePowerOfTwoAnalyser
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
         // mayBePowerOfTwoInfo: impl -> var -> ispow2
-        private Dictionary<string, Dictionary<string, bool>> mayBePowerOfTwoInfo;
+        private readonly Dictionary<string, Dictionary<string, bool>> mayBePowerOfTwoInfo = new Dictionary<string, Dictionary<string, bool>>();
 
         public MayBePowerOfTwoAnalyser(GPUVerifier verifier)
         {
             this.verifier = verifier;
-            mayBePowerOfTwoInfo = new Dictionary<string, Dictionary<string, bool>>();
         }
 
         public void Analyse()
@@ -121,7 +120,7 @@ namespace GPUVerify
                 || v.TypedIdent.Type.Equals(verifier.IntRep.GetIntType(64));
         }
 
-        private Variable GetPowerOfTwoRhsVariable(Expr expr)
+        private static Variable GetPowerOfTwoRhsVariable(Expr expr)
         {
             Expr lhs, rhs;
 
@@ -157,7 +156,7 @@ namespace GPUVerify
             return null;
         }
 
-        private bool IsConstant(Expr expr)
+        private static bool IsConstant(Expr expr)
         {
             if (!(expr is LiteralExpr))
             {
@@ -169,7 +168,7 @@ namespace GPUVerify
             return (lit.Val is BvConst) || (lit.Val is Microsoft.Basetypes.BigNum);
         }
 
-        private bool IsConstant(Expr expr, int x)
+        private static bool IsConstant(Expr expr, int x)
         {
             if (!(expr is LiteralExpr))
             {
@@ -197,12 +196,12 @@ namespace GPUVerify
             return false;
         }
 
-        private bool IsVariable(Expr expr)
+        private static bool IsVariable(Expr expr)
         {
             return expr is IdentifierExpr;
         }
 
-        private Variable GetVariable(Expr expr)
+        private static Variable GetVariable(Expr expr)
         {
             return (expr as IdentifierExpr).Decl;
         }

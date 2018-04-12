@@ -12,20 +12,14 @@ namespace GPUVerify
     using System;
     using Microsoft.Boogie;
 
-    public class Print
+    public static class Print
     {
-        private static int debug = 0;
+        private const int Debug = 0;
 
         public static void DebugMessage(string arg, int level)
         {
-            if (level <= debug)
+            if (level <= Debug)
                 Console.WriteLine(arg);
-        }
-
-        public static void DebugMessage(Action function, int level)
-        {
-            if (level <= debug)
-                function();
         }
 
         public static void VerboseMessage(string arg)

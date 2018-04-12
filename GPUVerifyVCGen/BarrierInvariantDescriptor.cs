@@ -17,20 +17,20 @@ namespace GPUVerify
 
     public abstract class BarrierInvariantDescriptor
     {
-        private QKeyValue sourceLocationInfo;
-        private List<Expr> accessExprs;
+        private readonly QKeyValue sourceLocationInfo;
+        private readonly List<Expr> accessExprs = new List<Expr>();
 
-        protected GPUVerifier Verifier { get; private set; }
+        protected GPUVerifier Verifier { get; }
 
-        protected Expr Predicate { get; private set; }
+        protected Expr Predicate { get; }
 
-        protected Expr BarrierInvariant { get; private set; }
+        protected Expr BarrierInvariant { get; }
 
-        protected KernelDualiser Dualiser { get; private set; }
+        protected KernelDualiser Dualiser { get; }
 
-        protected string ProcName { get; private set; }
+        protected string ProcName { get; }
 
-        public BarrierInvariantDescriptor(
+        protected BarrierInvariantDescriptor(
             Expr predicate, Expr barrierInvariant, QKeyValue sourceLocationInfo, KernelDualiser dualiser, string procName, GPUVerifier verifier)
         {
             this.Predicate = predicate;
@@ -38,7 +38,6 @@ namespace GPUVerify
             this.sourceLocationInfo = sourceLocationInfo;
             this.Dualiser = dualiser;
             this.ProcName = procName;
-            this.accessExprs = new List<Expr>();
             this.Verifier = verifier;
 
             if (GPUVerifyVCGenCommandLineOptions.BarrierAccessChecks)
@@ -61,7 +60,7 @@ namespace GPUVerify
             AssertCmd result = new AssertCmd(
               Token.NoToken,
               new VariableDualiser(1, Dualiser.Verifier, ProcName).VisitExpr(Expr.Imp(Predicate, BarrierInvariant)),
-              Dualiser.MakeThreadSpecificAttributes(sourceLocationInfo, 1));
+              KernelDualiser.MakeThreadSpecificAttributes(sourceLocationInfo, 1));
             result.Attributes = new QKeyValue(Token.NoToken, "barrier_invariant", new List<object> { Expr.True }, result.Attributes);
             return result;
         }
@@ -103,17 +102,13 @@ namespace GPUVerify
             public HashSet<Tuple<Expr, IdentifierExpr, Expr>> SubExprs { get; } =
                 new HashSet<Tuple<Expr, IdentifierExpr, Expr>>();
 
-            public SubExprVisitor()
-            {
-            }
-
             public override Expr VisitNAryExpr(NAryExpr node)
             {
                 if (node.Fun is MapSelect)
                 {
-                    Debug.Assert((node.Fun as MapSelect).Arity == 1);
+                    Debug.Assert(((MapSelect)node.Fun).Arity == 1);
                     Debug.Assert(node.Args[0] is IdentifierExpr);
-                    IdentifierExpr v = node.Args[0] as IdentifierExpr;
+                    IdentifierExpr v = (IdentifierExpr)node.Args[0];
                     if (QKeyValue.FindBoolAttribute(v.Decl.Attributes, "group_shared")
                         || QKeyValue.FindBoolAttribute(v.Decl.Attributes, "global"))
                     {
@@ -123,7 +118,7 @@ namespace GPUVerify
                     }
                 }
                 else if (node.Fun is BinaryOperator
-                    && (node.Fun as BinaryOperator).Op == BinaryOperator.Opcode.Imp)
+                    && ((BinaryOperator)node.Fun).Op == BinaryOperator.Opcode.Imp)
                 {
                     var p = node.Args[0];
                     var q = node.Args[1];
@@ -168,7 +163,7 @@ namespace GPUVerify
 
             private Expr BuildPathCondition()
             {
-                return path.Aggregate(Expr.True as Expr, (e1, e2) => Expr.And(e1, e2));
+                return path.Aggregate(Expr.True as Expr, Expr.And);
             }
         }
     }

@@ -59,11 +59,11 @@ namespace GPUVerify
         private const string SizeTBitsType = "_SIZE_T_TYPE";
         private readonly int sizeTBits;
         private readonly Dictionary<string, string> globalArraySourceNames;
-        private Implementation impl;
+        private readonly Implementation impl;
 
         public GPUVerifyErrorReporter(Program program, string implName)
         {
-            impl = program.Implementations.Where(item => item.Name.Equals(implName)).First();
+            impl = program.Implementations.First(item => item.Name.Equals(implName));
             sizeTBits = GetSizeTBits(program);
 
             globalArraySourceNames = new Dictionary<string, string>();
@@ -77,7 +77,7 @@ namespace GPUVerify
             }
         }
 
-        private int GetSizeTBits(Program program)
+        private static int GetSizeTBits(Program program)
         {
             var candidates = program.TopLevelDeclarations.OfType<TypeSynonymDecl>()
                 .Where(item => item.Name == SizeTBitsType);
@@ -155,10 +155,10 @@ namespace GPUVerify
             Program originalProgram = GetOriginalProgram();
             var cfg = originalProgram.ProcessLoops(GetOriginalImplementation(originalProgram));
 
-            for (int i = 0; i < error.Trace.Count(); i++)
+            for (int i = 0; i < error.Trace.Count; i++)
             {
                 MaybeDisplayLoopHeadState(error.Trace[i], cfg, error.Model, originalProgram);
-                if (i < error.Trace.Count() - 1)
+                if (i < error.Trace.Count - 1)
                 {
                     MaybeDisplayLoopEntryState(error.Trace[i], error.Trace[i + 1], cfg, error.Model, originalProgram);
                 }
@@ -176,9 +176,9 @@ namespace GPUVerify
             }
 
             Block header = FindLoopHeaderWithStateName(loopHeadState, cfg);
-            var loopHeadStateSuffix = loopHeadState.Substring("loop_head_state_".Count());
+            var loopHeadStateSuffix = loopHeadState.Substring("loop_head_state_".Length);
             var relevantLoopEntryStates = GetCaptureStates(current).Where(item => item.Contains("loop_entry_state_" + loopHeadStateSuffix));
-            if (relevantLoopEntryStates.Count() == 0)
+            if (!relevantLoopEntryStates.Any())
             {
                 return;
             }
@@ -190,7 +190,7 @@ namespace GPUVerify
             ShowVariablesReferencedInLoop(cfg, model, loopEntryState, header);
         }
 
-        private SourceLocationInfo GetSourceLocationForBasicBlock(Block header)
+        private static SourceLocationInfo GetSourceLocationForBasicBlock(Block header)
         {
             foreach (var a in header.Cmds.OfType<AssertCmd>())
             {
@@ -207,7 +207,7 @@ namespace GPUVerify
         private void MaybeDisplayLoopBackEdgeState(Block current, Graph<Block> cfg, Model model, Program originalProgram)
         {
             var relevantLoopBackEdgeStates = GetCaptureStates(current).Where(item => item.Contains("loop_back_edge_state"));
-            if (relevantLoopBackEdgeStates.Count() == 0)
+            if (!relevantLoopBackEdgeStates.Any())
             {
                 return;
             }
@@ -255,7 +255,7 @@ namespace GPUVerify
                         AccessType access;
                         GetArrayNameAndAccessTypeFromAccessHasOccurredVariable(v, out arrayName, out access);
                         var accessOffsetVar = originalProgram.TopLevelDeclarations.OfType<Variable>()
-                            .Where(item => item.Name == RaceInstrumentationUtil.MakeOffsetVariableName(arrayName, access)).First();
+                            .First(item => item.Name == RaceInstrumentationUtil.MakeOffsetVariableName(arrayName, access));
                         if (ExtractVariableValueFromCapturedState(v.Name, capturedState, model) == "true")
                         {
                             if (GetStateFromModel(capturedState, model).TryGet(accessOffsetVar.Name) is Model.Number)
@@ -266,7 +266,7 @@ namespace GPUVerify
                             }
                             else
                             {
-                                Console.Error.WriteLine("  " + access.ToString().ToLower() + " " + access.Direction() + " " + arrayName.TrimStart(new char[] { '$' })
+                                Console.Error.WriteLine("  " + access.ToString().ToLower() + " " + access.Direction() + " " + arrayName.TrimStart('$')
                                   + " (unknown offset)" + " (" + ThreadDetails(model, 1, false) + ")");
                             }
                         }
@@ -280,7 +280,7 @@ namespace GPUVerify
         private void ShowVariablesReferencedInLoop(Graph<Block> cfg, Model model, string capturedState, Block heaer)
         {
             foreach (var v in VC.VCGen.VarsReferencedInLoop(cfg, heaer).Select(item => item.Name)
-                .Where(item => IsOriginalProgramVariable(item)))
+                .Where(IsOriginalProgramVariable))
             {
                 int id;
                 var cleaned = CleanOriginalProgramVariable(v, out id);
@@ -301,7 +301,7 @@ namespace GPUVerify
                 var prefix = "_" + currentAccessType + "_HAS_OCCURRED_";
                 if (v.Name.StartsWith(prefix))
                 {
-                    arrayName = globalArraySourceNames[v.Name.Substring(prefix.Count())];
+                    arrayName = globalArraySourceNames[v.Name.Substring(prefix.Length)];
                     accessType = currentAccessType;
                     return;
                 }
@@ -312,15 +312,15 @@ namespace GPUVerify
             accessType = null;
         }
 
-        private bool IsOriginalProgramVariable(string name)
+        private static bool IsOriginalProgramVariable(string name)
         {
             // We ignore the following variables:
             // * Variables not starting with "$", these are internal variables.
             // * Variables prefixed with "$arrayId", these are internal pointer names.
-            return name.Count() > 0 && name.StartsWith("$") && !name.StartsWith("$arrayId");
+            return name.Any() && name.StartsWith("$") && !name.StartsWith("$arrayId");
         }
 
-        private Block FindNodeContainingCaptureState(Graph<Block> cfg, string captureState)
+        private static Block FindNodeContainingCaptureState(Graph<Block> cfg, string captureState)
         {
             foreach (var b in cfg.Nodes)
             {
@@ -334,7 +334,7 @@ namespace GPUVerify
             return null;
         }
 
-        private Block FindHeaderForBackEdgeNode(Graph<Block> cfg, Block backEdgeNode)
+        private static Block FindHeaderForBackEdgeNode(Graph<Block> cfg, Block backEdgeNode)
         {
             foreach (var header in cfg.Headers)
             {
@@ -348,17 +348,17 @@ namespace GPUVerify
             return null;
         }
 
-        private string FindLoopHeadState(Block b)
+        private static string FindLoopHeadState(Block b)
         {
             var relevantLoopHeadStates = GetCaptureStates(b).Where(item => item.Contains("loop_head_state"));
-            if (relevantLoopHeadStates.Count() == 0)
+            if (!relevantLoopHeadStates.Any())
                 return null;
 
             Debug.Assert(relevantLoopHeadStates.Count() == 1);
             return relevantLoopHeadStates.First();
         }
 
-        private IEnumerable<string> GetCaptureStates(Block b)
+        private static IEnumerable<string> GetCaptureStates(Block b)
         {
             return b.Cmds.OfType<AssumeCmd>()
                 .Select(item => QKeyValue.FindStringAttribute(item.Attributes, "captureState"))
@@ -367,7 +367,7 @@ namespace GPUVerify
 
         private void DisplayParameterValues(Counterexample error)
         {
-            if (impl.InParams.Count() == 0)
+            if (!impl.InParams.Any())
                 return;
 
             string funName = QKeyValue.FindStringAttribute(impl.Attributes, "source_name");
@@ -402,7 +402,7 @@ namespace GPUVerify
             if (globalArraySourceNames.ContainsKey(strippedName))
                 return globalArraySourceNames[strippedName];
             else
-                return strippedName.TrimStart(new char[] { '$' }).Split(new char[] { '.' })[0];
+                return strippedName.TrimStart('$').Split('.')[0];
         }
 
         private static string ExtractValueFromModelElement(Model.Element element)
@@ -463,7 +463,7 @@ namespace GPUVerify
                 Console.Error.WriteLine(possibleSourcesForFirstAccess.First().Top() + ":");
                 possibleSourcesForFirstAccess.First().PrintStackTrace();
             }
-            else if (possibleSourcesForFirstAccess.Count() == 0)
+            else if (!possibleSourcesForFirstAccess.Any())
             {
                 Console.Error.WriteLine("from external source location\n");
             }
@@ -512,8 +512,8 @@ namespace GPUVerify
             string checkId = QKeyValue.FindStringAttribute(attributes, "check_id");
             return QKeyValue.FindStringAttribute(
                 cex.Trace.Last().Cmds.OfType<AssumeCmd>()
-                    .Where(item => QKeyValue.FindStringAttribute(item.Attributes, "check_id") == checkId)
-                    .First().Attributes,
+                    .First(item => QKeyValue.FindStringAttribute(item.Attributes, "check_id") == checkId)
+                    .Attributes,
                 "captureState");
         }
 
@@ -529,7 +529,7 @@ namespace GPUVerify
 
         private static string GetSourceFileName()
         {
-            return CommandLineOptions.Clo.Files[CommandLineOptions.Clo.Files.Count() - 1];
+            return CommandLineOptions.Clo.Files[CommandLineOptions.Clo.Files.Count - 1];
         }
 
         private static void PopulateModelWithStatesIfNecessary(Counterexample cex)
@@ -653,7 +653,7 @@ namespace GPUVerify
 
         private Implementation GetOriginalImplementation(Program prog)
         {
-            return prog.Implementations.Where(item => item.Name.Equals(impl.Name)).First();
+            return prog.Implementations.First(item => item.Name.Equals(impl.Name));
         }
 
         private static Program GetOriginalProgram()
@@ -805,13 +805,13 @@ namespace GPUVerify
         private static QKeyValue GetAttributes(Absy a)
         {
             if (a is PredicateCmd)
-                return (a as PredicateCmd).Attributes;
+                return ((PredicateCmd)a).Attributes;
             else if (a is Requires)
-                return (a as Requires).Attributes;
+                return ((Requires)a).Attributes;
             else if (a is Ensures)
-                return (a as Ensures).Attributes;
+                return ((Ensures)a).Attributes;
             else if (a is CallCmd)
-                return (a as CallCmd).Attributes;
+                return ((CallCmd)a).Attributes;
             else
                 return null;
         }
@@ -873,7 +873,7 @@ namespace GPUVerify
             string state = GetStateName(err);
             string arrayName = QKeyValue.FindStringAttribute(err.FailingAssert.Attributes, "array_name");
             Model.Element arrayOffset = GetStateFromModel(state, err.Model).TryGet("_ARRAY_OFFSET_" + arrayName);
-            Axiom arrayInfo = GetOriginalProgram().Axioms.Where(item => QKeyValue.FindStringAttribute(item.Attributes, "array_info") == arrayName).First();
+            Axiom arrayInfo = GetOriginalProgram().Axioms.First(item => QKeyValue.FindStringAttribute(item.Attributes, "array_info") == arrayName);
 
             string arrayAccess = GetArrayAccess(
                 ParseOffset(arrayOffset),
@@ -932,9 +932,9 @@ namespace GPUVerify
             elWidth /= 8;
             srcElWidth /= 8;
 
-            uint[] dimStrides = new uint[dims.Count()];
-            dimStrides[dims.Count() - 1] = 1;
-            for (int i = dims.Count() - 2; i >= 0; i--)
+            uint[] dimStrides = new uint[dims.Length];
+            dimStrides[dims.Length - 1] = 1;
+            for (int i = dims.Length - 2; i >= 0; i--)
                 dimStrides[i] = dimStrides[i + 1] * Convert.ToUInt32(dims[i + 1]);
 
             BigInteger offsetInBytes = offset * elWidth;
@@ -1132,7 +1132,7 @@ namespace GPUVerify
 
         private class VariableFinderVisitor : StandardVisitor
         {
-            private string varName;
+            private readonly string varName;
             private Variable variable = null;
 
             public VariableFinderVisitor(string varName)

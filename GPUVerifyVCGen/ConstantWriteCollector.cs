@@ -53,7 +53,7 @@ namespace GPUVerify
             return access == null;
         }
 
-        private void CheckMapIndex(MapAssignLhs node)
+        private static void CheckMapIndex(MapAssignLhs node)
         {
             if (node.Indexes.Count > 1)
                 MultiDimensionalMapError();

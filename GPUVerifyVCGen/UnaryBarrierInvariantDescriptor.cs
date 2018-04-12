@@ -17,13 +17,12 @@ namespace GPUVerify
 
     public class UnaryBarrierInvariantDescriptor : BarrierInvariantDescriptor
     {
-        private List<Expr> instantiationExprs;
+        private readonly List<Expr> instantiationExprs = new List<Expr>();
 
         public UnaryBarrierInvariantDescriptor(
             Expr predicate, Expr barrierInvariant, QKeyValue sourceLocationInfo, KernelDualiser dualiser, string procName, GPUVerifier verifier)
             : base(predicate, barrierInvariant, sourceLocationInfo, dualiser, procName, verifier)
         {
-            instantiationExprs = new List<Expr>();
         }
 
         public void AddInstantiationExpr(Expr instantiationExpr)
@@ -59,11 +58,11 @@ namespace GPUVerify
 
         private class ThreadInstantiator : Duplicator
         {
-            private Expr instantiationExpr;
-            private int thread;
-            private GPUVerifier verifier;
-            private UniformityAnalyser uni;
-            private string procName;
+            private readonly Expr instantiationExpr;
+            private readonly int thread;
+            private readonly GPUVerifier verifier;
+            private readonly UniformityAnalyser uni;
+            private readonly string procName;
 
             public ThreadInstantiator(
                 Expr instantiationExpr, int thread, GPUVerifier verifier, string procName)
@@ -99,12 +98,6 @@ namespace GPUVerify
                 Console.WriteLine("  you need to use get_local_id(0) directly.");
                 Environment.Exit(1);
                 return null;
-            }
-
-            private bool InstantiationExprIsThreadId()
-            {
-                return (instantiationExpr is IdentifierExpr)
-                    && ((IdentifierExpr)instantiationExpr).Decl.Name.Equals(verifier.MakeThreadId("X", thread).Name);
             }
         }
     }

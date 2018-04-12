@@ -17,15 +17,15 @@ namespace GPUVerify
 
     public class VariableDefinitionAnalysisRegion
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
-        private HashSet<string> possibleInductionVars
+        private readonly HashSet<string> possibleInductionVars
             = new HashSet<string>();
 
-        private Dictionary<object, Dictionary<string, Expr>> possibleInductionVarDefs
+        private readonly Dictionary<object, Dictionary<string, Expr>> possibleInductionVarDefs
             = new Dictionary<object, Dictionary<string, Expr>>();
 
-        private Dictionary<string, Expr> rootSubstitution
+        private readonly Dictionary<string, Expr> rootSubstitution
             = new Dictionary<string, Expr>();
 
         private VariableDefinitionAnalysisRegion(GPUVerifier v)
@@ -35,7 +35,7 @@ namespace GPUVerify
 
         private class MapSelectOrFloatVisitor : StandardVisitor
         {
-            private static readonly string[] FloatFunctions = new string[]
+            private static readonly string[] FloatFunctions =
               { "FADD", "FSUB", "FMUL", "FDIV", "FPOW", "FEQ", "FLT", "FUNO" };
 
             public bool HasMapSelectOrFloat { get; private set; } = false;
@@ -83,7 +83,7 @@ namespace GPUVerify
         private class VarDefs
         {
             private Block block;
-            private List<Tuple<Variable, Expr>> cmds = new List<Tuple<Variable, Expr>>();
+            private List<Tuple<Variable, Expr>> cmds;
             private IEnumerable<Block> predecessors;
             private IEnumerable<Variable> modSet;
             private Dictionary<Variable, Expr> varDefs = new Dictionary<Variable, Expr>();
@@ -98,7 +98,7 @@ namespace GPUVerify
 
             private class SubstitutionDuplicator : Duplicator
             {
-                private Dictionary<Variable, Expr> defs;
+                private readonly Dictionary<Variable, Expr> defs;
 
                 public bool IsSubstitutable { get; private set; } = true;
 
@@ -146,7 +146,7 @@ namespace GPUVerify
                 }
             }
 
-            private Dictionary<Variable, Expr> MergePredecessors(
+            private static Dictionary<Variable, Expr> MergePredecessors(
                 Dictionary<Block, VarDefs> blockVarDefs, IEnumerable<Block> preds)
             {
                 var predVarDefs = new Dictionary<Variable, Expr>();
@@ -229,8 +229,8 @@ namespace GPUVerify
                     var v = new VariablesOccurringInExpressionVisitor();
                     v.Visit(p.Value);
                     var modVars = v.GetVariables()
-                                   .Where(i => i is Variable && modSet.Contains(i as Variable));
-                    if (modVars.Count() == 1 && modVars.Single() as Variable == p.Key)
+                                   .Where(i => modSet.Contains(i));
+                    if (modVars.Count() == 1 && modVars.Single() == p.Key)
                         yield return new Tuple<Variable, Expr>(p.Key, p.Value);
                 }
             }
@@ -294,14 +294,9 @@ namespace GPUVerify
                 return possibleInductionVarDefs[regionId][variable];
         }
 
-        public IEnumerable<string> GetPossibleInductionVariables()
-        {
-            return possibleInductionVars;
-        }
-
         private class SubstitutionPrimitiveDuplicator : Duplicator
         {
-            private Dictionary<string, Expr> defs;
+            private readonly Dictionary<string, Expr> defs;
 
             public SubstitutionPrimitiveDuplicator(Dictionary<string, Expr> d)
             {
@@ -332,11 +327,11 @@ namespace GPUVerify
 
         private class SubstitutionDuplicator : Duplicator
         {
-            private Dictionary<string, Expr> defs;
-            private GPUVerifier verifier;
-            private string procName;
+            private readonly Dictionary<string, Expr> defs;
+            private readonly GPUVerifier verifier;
+            private readonly string procName;
 
-            public HashSet<string> FreeVars { get; private set; } = new HashSet<string>();
+            public HashSet<string> FreeVars { get; } = new HashSet<string>();
 
             public SubstitutionDuplicator(Dictionary<string, Expr> d, GPUVerifier v, string p)
             {

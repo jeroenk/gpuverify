@@ -21,34 +21,34 @@ namespace GPUVerify
     public class BoogieInterpreter
     {
         // The engine holding all the configuration options
-        private DynamicAnalysis engine;
+        private readonly DynamicAnalysis engine;
 
         // Local and global IDs of the 2 threads modelled in GPUverify
-        private BitVector[] localID1 = new BitVector[3];
-        private BitVector[] localID2 = new BitVector[3];
-        private BitVector[] globalID1 = new BitVector[3];
-        private BitVector[] globalID2 = new BitVector[3];
+        private readonly BitVector[] localID1 = new BitVector[3];
+        private readonly BitVector[] localID2 = new BitVector[3];
+        private readonly BitVector[] globalID1 = new BitVector[3];
+        private readonly BitVector[] globalID2 = new BitVector[3];
 
         // The GPU configuration
-        private GPU gpu = new GPU();
+        private readonly GPU gpu = new GPU();
 
         // The memory for the interpreter
-        private Memory memory = new Memory();
+        private readonly Memory memory = new Memory();
 
         // The expression trees used internally to evaluate Boogie expressions
-        private Dictionary<Expr, ExprTree> exprTrees = new Dictionary<Expr, ExprTree>();
+        private readonly Dictionary<Expr, ExprTree> exprTrees = new Dictionary<Expr, ExprTree>();
 
         // A basic block label to basic block mapping
-        private Dictionary<string, Block> labelToBlock = new Dictionary<string, Block>();
+        private readonly Dictionary<string, Block> labelToBlock = new Dictionary<string, Block>();
 
         // The current status of an assert - is it true or false?
-        private Dictionary<string, BitVector> assertStatus = new Dictionary<string, BitVector>();
+        private readonly Dictionary<string, BitVector> assertStatus = new Dictionary<string, BitVector>();
 
         // Our FP interpretations
-        private Dictionary<Tuple<BitVector, BitVector, string>, BitVector> fpInterpretations = new Dictionary<Tuple<BitVector, BitVector, string>, BitVector>();
+        private readonly Dictionary<Tuple<BitVector, BitVector, string>, BitVector> fpInterpretations = new Dictionary<Tuple<BitVector, BitVector, string>, BitVector>();
 
         // Which basic blocks have been covered
-        private HashSet<Block> covered = new HashSet<Block>();
+        private readonly HashSet<Block> covered = new HashSet<Block>();
 
         // Keeping track of header execution counts
         private Graph<Block> theLoops;
@@ -64,21 +64,16 @@ namespace GPUVerify
         // To time execution
         private Stopwatch stopwatch = new Stopwatch();
 
-        public IEnumerable<string> KilledCandidates()
-        {
-            return assertStatus.Where(x => x.Value.Equals(BitVector.False)).Select(x => x.Key);
-        }
-
         public BoogieInterpreter(DynamicAnalysis engine, Program program)
         {
             this.engine = engine;
 
             // If there are no invariants to falsify, return
-            if (program.TopLevelDeclarations.OfType<Constant>().Where(item => QKeyValue.FindBoolAttribute(item.Attributes, "existential")).Count() == 0)
+            if (!program.TopLevelDeclarations.OfType<Constant>().Any(item => QKeyValue.FindBoolAttribute(item.Attributes, "existential")))
                 return;
 
             stopwatch.Start();
-            Implementation impl = program.TopLevelDeclarations.OfType<Implementation>().Where(item => QKeyValue.FindBoolAttribute(item.Attributes, "kernel")).First();
+            Implementation impl = program.TopLevelDeclarations.OfType<Implementation>().First(item => QKeyValue.FindBoolAttribute(item.Attributes, "kernel"));
 
             // Seed the random number generator so that it is deterministic
             random = new Random(impl.Name.Length);
@@ -87,49 +82,9 @@ namespace GPUVerify
             foreach (Block block in impl.Blocks)
                 labelToBlock[block.Label] = block;
 
-            this.theLoops = program.ProcessLoops(impl);
+            theLoops = program.ProcessLoops(impl);
 
             DoInterpretation(program, impl);
-        }
-
-        private Tuple<HashSet<Variable>, HashSet<Variable>, HashSet<Variable>> ComputeWriteAndReadSets(Block header, HashSet<Block> loopBody)
-        {
-            HashSet<Variable> writeSet = new HashSet<Variable>();
-            HashSet<Variable> readSet = new HashSet<Variable>();
-            HashSet<Variable> assertReadSet = new HashSet<Variable>();
-            var readVisitor = new VariablesOccurringInExpressionVisitor();
-            var assertReadVisitor = new VariablesOccurringInExpressionVisitor();
-            foreach (Block block in loopBody)
-            {
-                foreach (AssignCmd assignment in block.Cmds.OfType<AssignCmd>())
-                {
-                    List<Variable> written = new List<Variable>();
-                    assignment.AddAssignedVariables(written);
-                    foreach (Variable variable in written)
-                    {
-                        writeSet.Add(variable);
-                    }
-
-                    foreach (Expr rhs in assignment.Rhss)
-                    {
-                        readVisitor.Visit(rhs);
-                    }
-
-                    foreach (Variable variable in readVisitor.GetVariables())
-                    {
-                        readSet.Add(variable);
-                    }
-                }
-
-                foreach (AssertCmd assert in header.Cmds.OfType<AssertCmd>())
-                {
-                    assertReadVisitor.Visit(assert);
-                    foreach (Variable variable in assertReadVisitor.GetVariables())
-                        assertReadSet.Add(variable);
-                }
-            }
-
-            return Tuple.Create(writeSet, readSet, assertReadSet);
         }
 
         private void DoInterpretation(Program program, Implementation impl)
@@ -466,7 +421,7 @@ namespace GPUVerify
                         {
                             if (scalar.Type is BvType)
                             {
-                                BvType bv = scalar.Type as BvType;
+                                BvType bv = (BvType)scalar.Type;
                                 if (bv.Bits == 1)
                                 {
                                     memory.Store(scalar.Symbol, BitVector.True);
@@ -475,7 +430,7 @@ namespace GPUVerify
                         }
                         else if (scalar.Type is BasicType)
                         {
-                            BasicType basic = scalar.Type as BasicType;
+                            BasicType basic = (BasicType)scalar.Type;
                             if (basic.IsBool)
                                 memory.Store(scalar.Symbol, BitVector.True);
                         }
@@ -495,7 +450,7 @@ namespace GPUVerify
                             }
                             else if (scalarChild.Type is BasicType)
                             {
-                                BasicType basic = scalarChild.Type as BasicType;
+                                BasicType basic = (BasicType)scalarChild.Type;
                                 if (basic.IsBool)
                                     memory.Store(scalarChild.Symbol, BitVector.False);
                             }
@@ -800,7 +755,7 @@ namespace GPUVerify
             }
         }
 
-        private bool CartesianProduct(List<int> indices, List<int> sizes)
+        private static bool CartesianProduct(List<int> indices, List<int> sizes)
         {
             bool changed = false;
             for (int i = indices.Count - 1; !changed && i > 0; --i)
@@ -855,7 +810,7 @@ namespace GPUVerify
             throw new UnhandledException("Unhandled control transfer command: " + transfer.ToString());
         }
 
-        private bool IsBoolBinaryOp(BinaryNode binary)
+        private static bool IsBoolBinaryOp(BinaryNode binary)
         {
             return binary.Op.Equals(BinaryOps.IF)
                 || binary.Op.Equals(BinaryOps.IFF)
@@ -877,7 +832,7 @@ namespace GPUVerify
                 || RegularExpressions.BvUGE.IsMatch(binary.Op);
         }
 
-        private void EvaluateBinaryBoolNode(BinaryNode binary)
+        private static void EvaluateBinaryBoolNode(BinaryNode binary)
         {
             ExprNode left = binary.GetChildren()[0] as ExprNode;
             ExprNode right = binary.GetChildren()[1] as ExprNode;
@@ -1594,15 +1549,6 @@ namespace GPUVerify
         public class UnhandledException : Exception
         {
             public UnhandledException(string message)
-                 : base(message)
-            {
-            }
-        }
-
-        [Serializable]
-        public class TimeLimitException : Exception
-        {
-            public TimeLimitException(string message)
                  : base(message)
             {
             }

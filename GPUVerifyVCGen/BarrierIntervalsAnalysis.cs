@@ -23,9 +23,9 @@ namespace GPUVerify
 
     public class BarrierIntervalsAnalysis
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
+        private readonly BarrierStrength strength;
         private Dictionary<Implementation, HashSet<BarrierInterval>> intervals;
-        private BarrierStrength strength;
 
         public BarrierIntervalsAnalysis(GPUVerifier verifier, BarrierStrength strength)
         {
@@ -72,7 +72,7 @@ namespace GPUVerify
                 if (b == specialExitBlock)
                     continue;
 
-                if (cfg.Successors(b).Count() == 0)
+                if (!cfg.Successors(b).Any())
                     cfg.AddEdge(b, specialExitBlock);
             }
 
@@ -103,7 +103,7 @@ namespace GPUVerify
 
             if (GPUVerifyVCGenCommandLineOptions.DebugGPUVerify)
             {
-                Console.WriteLine("Found " + result.Count() + " barrier interval(s) in " + impl.Name);
+                Console.WriteLine("Found " + result.Count + " barrier interval(s) in " + impl.Name);
             }
 
             return result;
@@ -111,7 +111,7 @@ namespace GPUVerify
 
         private bool StartsWithUnconditionalBarrier(Block b, Implementation impl, Block specialExitBlock)
         {
-            if (verifier.IsKernelProcedure(impl.Proc))
+            if (GPUVerifier.IsKernelProcedure(impl.Proc))
             {
                 if (b == impl.Blocks[0])
                 {
@@ -147,7 +147,7 @@ namespace GPUVerify
                 return false;
             }
 
-            Debug.Assert(c.Ins.Count() == 2);
+            Debug.Assert(c.Ins.Count == 2);
             if (strength == BarrierStrength.GROUP_SHARED || strength == BarrierStrength.ALL)
             {
                 if (!c.Ins[0].Equals(verifier.IntRep.GetLiteral(1, verifier.IntRep.GetIntType(1))))
@@ -192,7 +192,7 @@ namespace GPUVerify
             return result;
         }
 
-        private void ExtractCommandsIntoBlocks(Implementation impl, Func<Cmd, bool> predicate)
+        private static void ExtractCommandsIntoBlocks(Implementation impl, Func<Cmd, bool> predicate)
         {
             Dictionary<Block, Block> oldToNew = new Dictionary<Block, Block>();
             HashSet<Block> newBlocks = new HashSet<Block>();

@@ -33,7 +33,7 @@ namespace GPUVerify
         {
             if (node.Fun is MapSelect)
             {
-                if ((node.Fun as MapSelect).Arity > 1)
+                if (((MapSelect)node.Fun).Arity > 1)
                 {
                     MultiDimensionalMapError();
                 }
@@ -50,7 +50,7 @@ namespace GPUVerify
                 }
 
                 Debug.Assert(node.Args[0] is IdentifierExpr);
-                var readVariable = (node.Args[0] as IdentifierExpr).Decl;
+                var readVariable = ((IdentifierExpr)node.Args[0]).Decl;
                 var index = node.Args[1];
                 this.VisitExpr(node.Args[1]);
 

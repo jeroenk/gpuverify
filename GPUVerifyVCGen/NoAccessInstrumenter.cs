@@ -15,8 +15,8 @@ namespace GPUVerify
 
     public class NoAccessInstrumenter : INoAccessInstrumenter
     {
-        private GPUVerifier verifier;
-        private IKernelArrayInfo stateToCheck;
+        private readonly GPUVerifier verifier;
+        private readonly IKernelArrayInfo stateToCheck;
 
         public NoAccessInstrumenter(GPUVerifier verifier)
         {

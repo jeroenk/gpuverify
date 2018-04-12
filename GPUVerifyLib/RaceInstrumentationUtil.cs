@@ -16,7 +16,7 @@ namespace GPUVerify
         ORIGINAL, WATCHDOG_SINGLE, WATCHDOG_MULTIPLE
     }
 
-    public class RaceInstrumentationUtil
+    public static class RaceInstrumentationUtil
     {
         // Assigned by GVCommandLineOptions
         public static RaceCheckingMethod RaceCheckingMethod { get; set; } = RaceCheckingMethod.WATCHDOG_SINGLE;

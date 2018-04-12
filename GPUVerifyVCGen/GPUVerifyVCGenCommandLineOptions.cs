@@ -14,11 +14,11 @@ namespace GPUVerify
     using System.Diagnostics;
     using System.Linq;
 
-    public class GPUVerifyVCGenCommandLineOptions
+    public static class GPUVerifyVCGenCommandLineOptions
     {
         private static bool printedHelp = false;
 
-        public static List<string> InputFiles { get; private set; } = new List<string>();
+        public static List<string> InputFiles { get; } = new List<string>();
 
         public static string OutputFile { get; private set; } = null;
 
@@ -85,9 +85,9 @@ namespace GPUVerify
 
         public static bool PrintLoopStatistics { get; private set; } = false;
 
-        public static List<string> DoNotGenerateCandidates { get; private set; } = new List<string>();
+        public static List<string> DoNotGenerateCandidates { get; } = new List<string>();
 
-        public static List<List<string>> KernelInterceptorParams { get; private set; } = new List<List<string>>();
+        public static List<List<string>> KernelInterceptorParams { get; } = new List<List<string>>();
 
         public static bool DisableInessentialLoopDetection { get; private set; } = false;
 

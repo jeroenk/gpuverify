@@ -17,13 +17,13 @@ namespace GPUVerify
     public class VariableDualiser : Duplicator
     {
         public static readonly HashSet<string> OtherFunctionNames =
-          new HashSet<string>(new string[] { "__other_bool", "__other_bv32", "__other_bv64", "__other_arrayId" });
+          new HashSet<string>(new[] { "__other_bool", "__other_bv32", "__other_bv64", "__other_arrayId" });
 
-        private int id;
-        private GPUVerifier verifier;
-        private UniformityAnalyser uniformityAnalyser;
-        private string procName;
-        private HashSet<Variable> quantifiedVars;
+        private readonly int id;
+        private readonly GPUVerifier verifier;
+        private readonly UniformityAnalyser uniformityAnalyser;
+        private readonly string procName;
+        private readonly HashSet<Variable> quantifiedVars = new HashSet<Variable>();
 
         public VariableDualiser(int id, GPUVerifier verifier, string procName)
         {
@@ -31,7 +31,6 @@ namespace GPUVerify
             this.verifier = verifier;
             this.uniformityAnalyser = verifier.UniformityAnalyser;
             this.procName = procName;
-            this.quantifiedVars = new HashSet<Variable>();
         }
 
         private bool SkipDualiseVariable(Variable node)
@@ -117,10 +116,10 @@ namespace GPUVerify
         {
             if (node.Fun is MapSelect)
             {
-                Debug.Assert((node.Fun as MapSelect).Arity == 1);
+                Debug.Assert(((MapSelect)node.Fun).Arity == 1);
                 if (node.Args[0] is NAryExpr)
                 {
-                    var inner = node.Args[0] as NAryExpr;
+                    var inner = (NAryExpr)node.Args[0];
                     Debug.Assert(inner.Fun is MapSelect);
                     Debug.Assert(inner.Args[0] is IdentifierExpr);
                     Debug.Assert(QKeyValue.FindBoolAttribute(((IdentifierExpr)inner.Args[0]).Decl.Attributes, "atomic_usedmap"));
@@ -149,7 +148,7 @@ namespace GPUVerify
                 {
                     Debug.Assert(node.Args[0] is IdentifierExpr);
 
-                    if (QKeyValue.FindBoolAttribute((node.Args[0] as IdentifierExpr).Decl.Attributes, "group_shared")
+                    if (QKeyValue.FindBoolAttribute(((IdentifierExpr)node.Args[0]).Decl.Attributes, "group_shared")
                         && !GPUVerifyVCGenCommandLineOptions.OnlyIntraGroupRaceChecking)
                     {
                         var mapSelect = new NAryExpr(
@@ -168,7 +167,7 @@ namespace GPUVerify
 
             if (node.Fun is FunctionCall)
             {
-                FunctionCall call = node.Fun as FunctionCall;
+                FunctionCall call = (FunctionCall)node.Fun;
 
                 // Alternate dualisation for "other thread" functions
                 if (OtherFunctionNames.Contains(call.Func.Name))
@@ -209,7 +208,7 @@ namespace GPUVerify
                 return new MapAssignLhs(
                     Token.NoToken,
                     new MapAssignLhs(Token.NoToken, node.Map, new List<Expr> { verifier.GroupSharedIndexingExpr(id) }),
-                    node.Indexes.Select(idx => VisitExpr(idx)).ToList());
+                    node.Indexes.Select(VisitExpr).ToList());
             }
 
             return base.VisitMapAssignLhs(node);

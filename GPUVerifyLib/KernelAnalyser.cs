@@ -24,9 +24,7 @@ namespace GPUVerify
             Done,
             ResolutionError,
             TypeCheckingError,
-            ResolvedAndTypeChecked,
-            FatalError,
-            VerificationCompleted
+            ResolvedAndTypeChecked
         }
 
         /// <summary>
@@ -164,28 +162,6 @@ namespace GPUVerify
                         || !(callCmd.callee.Contains("_CHECK_READ")
                             || callCmd.callee.Contains("_CHECK_WRITE")
                             || callCmd.callee.Contains("_CHECK_ATOMIC")))
-                    {
-                        newCmds.Add(c);
-                    }
-                }
-
-                block.Cmds = newCmds;
-            }
-        }
-
-        public static void DisableRaceLogging(Program program)
-        {
-            foreach (var block in program.Blocks())
-            {
-                List<Cmd> newCmds = new List<Cmd>();
-                foreach (Cmd c in block.Cmds)
-                {
-                    // TODO: refine into proper check
-                    CallCmd callCmd = c as CallCmd;
-                    if (callCmd == null
-                        || !(callCmd.callee.Contains("_LOG_READ")
-                            || callCmd.callee.Contains("_LOG_WRITE")
-                            || callCmd.callee.Contains("_LOG_ATOMIC")))
                     {
                         newCmds.Add(c);
                     }
@@ -351,21 +327,10 @@ namespace GPUVerify
                 return builder.ToString();
             }
 
-            public void Reset()
-            {
-                VerificationErrors = Verified = Inconclusives = TimeOuts = OutOfMemories = InputErrors = InternalErrors = 0;
-            }
-
             public bool AllVerified()
             {
                 // This allows for "Verified" to be zero which is valid for the empty Boogie program
                 return TotalErrors == 0;
-            }
-
-            // Returns true iff reported errors are verification errors
-            public bool AllErrorsAreVerificationErrors()
-            {
-                return (TotalErrors - VerificationErrors) == 0;
             }
 
             public bool HasInternalError()

@@ -24,29 +24,16 @@ namespace Microsoft.Boogie
     // Every engine maintains its own set of additional command-line parameters
     public abstract class RefutationEngine
     {
-        public int ID { get; set; }
+        protected int ID { get; }
 
-        public bool UnderApproximating { get; set; }
-
-        public RefutationEngine(int id, bool underApproximating)
+        protected RefutationEngine(int id)
         {
             ID = id;
-            UnderApproximating = underApproximating;
-        }
-
-        public static List<Parameter> GetAllowedParameters()
-        {
-            return new List<Parameter>();
         }
 
         public static List<Parameter> GetRequiredParameters()
         {
             return new List<Parameter>();
-        }
-
-        public static List<Tuple<Parameter, Parameter>> GetMutuallyExclusiveParameters()
-        {
-            return new List<Tuple<Parameter, Parameter>>();
         }
 
         public abstract class Parameter
@@ -63,7 +50,7 @@ namespace Microsoft.Boogie
         {
             public T DefaultValue { get; }
 
-            private List<T> allowedValues;
+            private readonly List<T> allowedValues;
 
             public Parameter(string name, T defaultValue, List<T> allowedValues = null)
                 : base(name)
@@ -104,19 +91,19 @@ namespace Microsoft.Boogie
             return errorLimitParameter;
         }
 
-        public static new List<Parameter> GetAllowedParameters()
+        public static List<Parameter> GetAllowedParameters()
         {
             return new List<Parameter> { GetSolverParameter(), GetErrorLimitParameter() };
         }
 
         private Houdini.ConcurrentHoudini houdini = null;
 
-        public string Solver { get; set; }
+        public string Solver { get; }
 
-        public int ErrorLimit { get; set; }
+        public int ErrorLimit { get; }
 
-        public SMTEngine(int id, bool underApproximating, string solver, int errorLimit)
-            : base(id, underApproximating)
+        protected SMTEngine(int id, string solver, int errorLimit)
+            : base(id)
         {
             Solver = solver;
             ErrorLimit = errorLimit;
@@ -192,9 +179,9 @@ namespace Microsoft.Boogie
         {
         }
 
-        private void OutputResults(Houdini.HoudiniOutcome outcome, Houdini.HoudiniSession.HoudiniStatistics houdiniStats)
+        private static void OutputResults(Houdini.HoudiniOutcome outcome, Houdini.HoudiniSession.HoudiniStatistics houdiniStats)
         {
-            int numTrueAssigns = outcome.assignment.Where(x => x.Value).Count();
+            int numTrueAssigns = outcome.assignment.Count(x => x.Value);
             Console.WriteLine("Number of true assignments          = " + numTrueAssigns);
             Console.WriteLine("Number of false assignments         = " + (outcome.assignment.Count - numTrueAssigns));
             Console.WriteLine("Prover time                         = " + houdiniStats.proverTime.ToString("F2"));
@@ -250,8 +237,7 @@ namespace Microsoft.Boogie
             return allowedParams;
         }
 
-        // Override static method from base class
-        public static new List<Tuple<Parameter, Parameter>> GetMutuallyExclusiveParameters()
+        public static List<Tuple<Parameter, Parameter>> GetMutuallyExclusiveParameters()
         {
             return new List<Tuple<Parameter, Parameter>>
             {
@@ -267,7 +253,7 @@ namespace Microsoft.Boogie
         public int SlidingLimit { get; set; }
 
         public VanillaHoudini(int id, string solver, int errorLimit)
-            : base(id, false, solver, errorLimit)
+            : base(id, solver, errorLimit)
         {
             Delay = GetDelayParameter().DefaultValue;
             SlidingSeconds = GetSlidingSecondsParameter().DefaultValue;
@@ -286,7 +272,7 @@ namespace Microsoft.Boogie
         public const string Name = "SSTEP";
 
         public SSTEP(int id, string solver, int errorLimit)
-            : base(id, true, solver, errorLimit)
+            : base(id, solver, errorLimit)
         {
             CommandLineOptions.Clo.Cho[ID].DisableLoopInvEntryAssert = true;
         }
@@ -303,7 +289,7 @@ namespace Microsoft.Boogie
         public const string Name = "SBASE";
 
         public SBASE(int id, string solver, int errorLimit)
-            : base(id, true, solver, errorLimit)
+            : base(id, solver, errorLimit)
         {
             CommandLineOptions.Clo.Cho[ID].DisableLoopInvMaintainedAssert = true;
         }
@@ -344,22 +330,22 @@ namespace Microsoft.Boogie
             return requiredParams;
         }
 
-        public int UnrollFactor { get; set; }
+        private readonly int unrollFactor;
 
         public LU(int id, string solver, int errorLimit, int unrollFactor)
-            : base(id, true, solver, errorLimit)
+            : base(id, solver, errorLimit)
         {
-            UnrollFactor = unrollFactor;
+            this.unrollFactor = unrollFactor;
         }
 
         public override void ModifyProgramBeforeCrunch(Program program)
         {
-            program.UnrollLoops(UnrollFactor, CommandLineOptions.Clo.SoundLoopUnrolling);
+            program.UnrollLoops(unrollFactor, CommandLineOptions.Clo.SoundLoopUnrolling);
         }
 
         public override string ToString()
         {
-            return Name + UnrollFactor;
+            return Name + unrollFactor;
         }
     }
 
@@ -398,7 +384,7 @@ namespace Microsoft.Boogie
             return timeLimitParameter;
         }
 
-        public static new List<Parameter> GetAllowedParameters()
+        public static List<Parameter> GetAllowedParameters()
         {
             return new List<Parameter> { GetLoopHeaderLimitParameter(), GetLoopEscapingParameter(), GetTimeLimitParameter() };
         }
@@ -410,7 +396,7 @@ namespace Microsoft.Boogie
         public int TimeLimit { get; set; }
 
         public DynamicAnalysis()
-            : base(int.MaxValue, true)
+            : base(int.MaxValue)
         {
         }
 
@@ -432,7 +418,7 @@ namespace Microsoft.Boogie
 
         public bool RunHoudini { get; set; }
 
-        private List<RefutationEngine> engines = new List<RefutationEngine>();
+        private readonly List<RefutationEngine> engines = new List<RefutationEngine>();
         private int nextSMTEngineID = 0;
         private VanillaHoudini houdiniEngine = null;
 
@@ -476,11 +462,6 @@ namespace Microsoft.Boogie
             return nextSMTEngineID++;
         }
 
-        public int NumberOfSMTEngines()
-        {
-            return nextSMTEngineID;
-        }
-
         public IEnumerable<RefutationEngine> GetEngines()
         {
             return engines;
@@ -504,9 +485,9 @@ namespace Microsoft.Boogie
     // The pipeline scheduler
     public class Scheduler
     {
-        private List<string> fileNames;
+        private readonly List<string> fileNames;
 
-        public int ErrorCode { get; private set; }
+        public int ErrorCode { get; }
 
         public Scheduler(List<string> fileNames)
         {
@@ -711,7 +692,7 @@ namespace Microsoft.Boogie
 
         private Program GetFreshProgram(bool disableChecks, bool inline)
         {
-            return Utilities.GetFreshProgram(this.fileNames, disableChecks, inline);
+            return Utilities.GetFreshProgram(fileNames, disableChecks, inline);
         }
 
         private Program ApplyInvariants(Houdini.HoudiniOutcome outcome)

@@ -17,13 +17,13 @@ namespace GPUVerify
 
     public class AbstractHoudiniTransformation
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
-        private IEnumerable<string> candidates;
+        private readonly IEnumerable<string> candidates;
+
+        private readonly List<Declaration> existentialFunctions = new List<Declaration>();
 
         private int counter;
-
-        private List<Declaration> existentialFunctions;
 
         public AbstractHoudiniTransformation(GPUVerifier verifier)
         {
@@ -32,7 +32,6 @@ namespace GPUVerify
                   .Where(item => QKeyValue.FindBoolAttribute(item.Attributes, "existential"))
                   .Select(item => item.Name);
             this.counter = 0;
-            this.existentialFunctions = new List<Declaration>();
         }
 
         public void DoAbstractHoudiniTransform()
@@ -93,7 +92,7 @@ namespace GPUVerify
             Variable result = new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, string.Empty, Type.Bool));
 
             Function existentialFunction = new Function(Token.NoToken, "_existential_func" + counter, args, result);
-            existentialFunction.AddAttribute("existential", new object[] { Expr.True });
+            existentialFunction.AddAttribute("existential", Expr.True);
 
             counter++;
 
@@ -102,10 +101,10 @@ namespace GPUVerify
 
         private void TransformRemainingCandidates(IRegion region, List<PredicateCmd> oldCandidateInvariants)
         {
-            if (oldCandidateInvariants.Count() > 0)
+            if (oldCandidateInvariants.Any())
             {
                 List<TypedIdent> args = new List<TypedIdent>();
-                for (int i = 0; i < oldCandidateInvariants.Count(); i++)
+                for (int i = 0; i < oldCandidateInvariants.Count; i++)
                     args.Add(new TypedIdent(Token.NoToken, "x" + i, Type.Bool));
 
                 Function existentialFunction = CreateExistentialFunction(args);
@@ -167,7 +166,7 @@ namespace GPUVerify
 
                             Function implicationExistentialFunction = CreateExistentialFunction(
                                 new List<TypedIdent> { new TypedIdent(Token.NoToken, "x", Type.Bool), new TypedIdent(Token.NoToken, "y", Type.Bool) });
-                            implicationExistentialFunction.AddAttribute("absdomain", new object[] { "ImplicationDomain" });
+                            implicationExistentialFunction.AddAttribute("absdomain", "ImplicationDomain");
                             existentialFunctions.Add(implicationExistentialFunction);
 
                             region.AddInvariant(new AssertCmd(
@@ -203,7 +202,7 @@ namespace GPUVerify
 
                     Function pow2ExistentialFunction = CreateExistentialFunction(
                         new List<TypedIdent> { new TypedIdent(Token.NoToken, "x", v.Type) });
-                    pow2ExistentialFunction.AddAttribute("absdomain", new object[] { "PowDomain" });
+                    pow2ExistentialFunction.AddAttribute("absdomain", "PowDomain");
                     existentialFunctions.Add(pow2ExistentialFunction);
 
                     region.AddInvariant(new AssertCmd(

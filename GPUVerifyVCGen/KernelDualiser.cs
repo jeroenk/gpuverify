@@ -19,7 +19,7 @@ namespace GPUVerify
     {
         public GPUVerifier Verifier { get; }
 
-        private List<BarrierInvariantDescriptor> barrierInvariantDescriptors = new List<BarrierInvariantDescriptor>();
+        private readonly List<BarrierInvariantDescriptor> barrierInvariantDescriptors = new List<BarrierInvariantDescriptor>();
 
         public KernelDualiser(GPUVerifier verifier)
         {
@@ -119,15 +119,7 @@ namespace GPUVerify
             return result;
         }
 
-        private AssumeCmd MakeThreadSpecificAssumeFromAssert(AssertCmd a, int thread)
-        {
-            AssumeCmd result = new AssumeCmd(
-                Token.NoToken,
-                new VariableDualiser(thread, Verifier, procName).VisitExpr(a.Expr.Clone() as Expr));
-            return result;
-        }
-
-        public QKeyValue MakeThreadSpecificAttributes(QKeyValue attributes, int thread)
+        public static QKeyValue MakeThreadSpecificAttributes(QKeyValue attributes, int thread)
         {
             if (attributes == null)
             {
@@ -144,7 +136,7 @@ namespace GPUVerify
         {
             if (c is CallCmd)
             {
-                CallCmd call = c as CallCmd;
+                CallCmd call = (CallCmd)c;
 
                 if (QKeyValue.FindBoolAttribute(call.Proc.Attributes, "barrier_invariant"))
                 {
@@ -312,7 +304,7 @@ namespace GPUVerify
             }
             else if (c is AssignCmd)
             {
-                AssignCmd assign = c as AssignCmd;
+                AssignCmd assign = (AssignCmd)c;
 
                 var vd1 = new VariableDualiser(1, Verifier, procName);
                 var vd2 = new VariableDualiser(2, Verifier, procName);
@@ -327,7 +319,7 @@ namespace GPUVerify
                 {
                     if (pair.Item1 is SimpleAssignLhs
                         && Verifier.UniformityAnalyser.IsUniform(
-                            procName, (pair.Item1 as SimpleAssignLhs).AssignedVariable.Name))
+                            procName, ((SimpleAssignLhs)pair.Item1).AssignedVariable.Name))
                     {
                         lhss1.Add(pair.Item1);
                         rhss1.Add(pair.Item2);
@@ -351,8 +343,8 @@ namespace GPUVerify
             }
             else if (c is HavocCmd)
             {
-                HavocCmd havoc = c as HavocCmd;
-                Debug.Assert(havoc.Vars.Count() == 1);
+                HavocCmd havoc = (HavocCmd)c;
+                Debug.Assert(havoc.Vars.Count == 1);
 
                 HavocCmd newHavoc;
 
@@ -367,7 +359,7 @@ namespace GPUVerify
             }
             else if (c is AssertCmd)
             {
-                AssertCmd a = c as AssertCmd;
+                AssertCmd a = (AssertCmd)c;
 
                 if (QKeyValue.FindBoolAttribute(a.Attributes, "sourceloc")
                   || QKeyValue.FindBoolAttribute(a.Attributes, "block_sourceloc")
@@ -391,7 +383,7 @@ namespace GPUVerify
             }
             else if (c is AssumeCmd)
             {
-                AssumeCmd ass = c as AssumeCmd;
+                AssumeCmd ass = (AssumeCmd)c;
 
                 if (QKeyValue.FindStringAttribute(ass.Attributes, "captureState") != null)
                 {
@@ -491,29 +483,6 @@ namespace GPUVerify
             return b;
         }
 
-        private List<PredicateCmd> MakeDualInvariants(List<PredicateCmd> originalInvariants)
-        {
-            List<PredicateCmd> result = new List<PredicateCmd>();
-            foreach (PredicateCmd p in originalInvariants)
-            {
-                {
-                    PredicateCmd newP = new AssertCmd(p.tok, Dualise(p.Expr, 1));
-                    newP.Attributes = p.Attributes;
-                    result.Add(newP);
-                }
-
-                if (!ContainsAsymmetricExpression(p.Expr)
-                    && !Verifier.UniformityAnalyser.IsUniform(procName, p.Expr))
-                {
-                    PredicateCmd newP = new AssertCmd(p.tok, Dualise(p.Expr, 2));
-                    newP.Attributes = p.Attributes;
-                    result.Add(newP);
-                }
-            }
-
-            return result;
-        }
-
         private void MakeDualLocalVariables(Implementation impl)
         {
             List<Variable> newLocalVars = new List<Variable>();
@@ -592,7 +561,7 @@ namespace GPUVerify
         {
             var newDecls = Verifier.Program.TopLevelDeclarations.Where(d => !decls.Contains(d));
             decls.AddRange(newDecls.ToList());
-            return decls.Count();
+            return decls.Count;
         }
 
         public void DualiseKernel()

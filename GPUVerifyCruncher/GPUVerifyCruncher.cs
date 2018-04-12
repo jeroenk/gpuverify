@@ -48,15 +48,13 @@ namespace GPUVerify
 
                 foreach (string file in CommandLineOptions.Clo.Files)
                 {
-                    string extension = Path.GetExtension(file)?.ToLower();
-
                     fileList.Add(file);
                 }
 
                 foreach (string file in fileList)
                 {
                     Contract.Assert(file != null);
-                    string extension = Path.GetExtension(file)?.ToLower();
+                    string extension = Path.GetExtension(file).ToLower();
 
                     if (extension != ".bpl")
                     {

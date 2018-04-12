@@ -19,10 +19,10 @@ namespace GPUVerify
     {
         public class Record
         {
-            private int line;
-            private int column;
-            private string file;
-            private string directory;
+            private readonly int line;
+            private readonly int column;
+            private readonly string file;
+            private readonly string directory;
 
             public Record(int line, int column, string file, string directory)
             {
@@ -75,7 +75,7 @@ namespace GPUVerify
             }
         }
 
-        private List<Record> records;
+        private readonly List<Record> records = new List<Record>();
 
         private class RecordComparison : IComparer<Record>
         {
@@ -118,12 +118,12 @@ namespace GPUVerify
                     }
                 }
 
-                if (s1.records.Count() < s2.records.Count())
+                if (s1.records.Count < s2.records.Count)
                 {
                     return -1;
                 }
 
-                if (s1.records.Count() > s2.records.Count())
+                if (s1.records.Count > s2.records.Count)
                 {
                     return 1;
                 }
@@ -134,7 +134,6 @@ namespace GPUVerify
 
         public SourceLocationInfo(QKeyValue attributes, string sourceFileName, IToken fallBackToken)
         {
-            records = new List<Record>();
             try
             {
                 var sourceLocFileName = Path.Combine(
@@ -148,14 +147,14 @@ namespace GPUVerify
                         throw new Exception();
                     }
 
-                    var info = sr.ReadLine().Split(new char[] { '\x1D' })[number];
-                    var chain = info.Split(new char[] { '\x1E' });
+                    var info = sr.ReadLine().Split('\x1D')[number];
+                    var chain = info.Split('\x1E');
                     Record blangRecord = null;
                     foreach (var c in chain)
                     {
                         if (c != string.Empty)
                         {
-                            var sourceInfo = c.Split(new char[] { '\x1F' });
+                            var sourceInfo = c.Split('\x1F');
                             int line = Convert.ToInt32(sourceInfo[0]);
                             int column = Convert.ToInt32(sourceInfo[1]);
                             string file = sourceInfo[2];
@@ -171,7 +170,7 @@ namespace GPUVerify
                         }
                     }
 
-                    if (records.Count() == 0)
+                    if (!records.Any())
                         records.Add(blangRecord);
                 }
             }
@@ -214,7 +213,7 @@ namespace GPUVerify
 
         private int Count()
         {
-            return records.Count();
+            return records.Count;
         }
 
         public Record Top()
@@ -260,7 +259,7 @@ namespace GPUVerify
             if (other == null)
                 return false;
 
-            if (records.Count() != other.records.Count())
+            if (records.Count != other.records.Count)
                 return false;
 
             foreach (var pair in records.Zip(other.records))

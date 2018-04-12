@@ -13,9 +13,9 @@ namespace GPUVerify
 
     public class AccessRecord
     {
-        public Variable V { get; private set; }
+        public Variable V { get; }
 
-        public Expr Index { get; private set; }
+        public Expr Index { get; }
 
         public AccessRecord(Variable v, Expr index)
         {

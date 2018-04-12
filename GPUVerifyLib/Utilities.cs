@@ -90,11 +90,10 @@ namespace GPUVerify
                     }
 
                     Program programSnippet;
-                    int errorCount;
                     try
                     {
                         var defines = new List<string> { "FILE_" + fileId };
-                        errorCount = Parser.Parse(bplFileName, defines, out programSnippet);
+                        var errorCount = Parser.Parse(bplFileName, defines, out programSnippet);
                         if (programSnippet == null || errorCount != 0)
                         {
                             Console.WriteLine("{0} parse errors detected in {1}", errorCount, bplFileName);
@@ -113,7 +112,7 @@ namespace GPUVerify
                     {
                         program = programSnippet;
                     }
-                    else if (programSnippet != null)
+                    else
                     {
                         program.AddTopLevelDeclarations(programSnippet.TopLevelDeclarations);
                     }
@@ -387,11 +386,10 @@ namespace GPUVerify
 
         public static Program GetFreshProgram(IList<string> fileNames, bool disableChecks, bool inline)
         {
-            KernelAnalyser.PipelineOutcome oc;
             Program program = IO.ParseBoogieProgram(fileNames, false);
             if (program == null)
                 Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
-            oc = KernelAnalyser.ResolveAndTypecheck(program, fileNames[fileNames.Count - 1]);
+            KernelAnalyser.PipelineOutcome oc = KernelAnalyser.ResolveAndTypecheck(program, fileNames[fileNames.Count - 1]);
             if (oc != KernelAnalyser.PipelineOutcome.ResolvedAndTypeChecked)
                 Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
 

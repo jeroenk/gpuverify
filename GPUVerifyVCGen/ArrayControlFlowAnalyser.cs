@@ -17,19 +17,17 @@ namespace GPUVerify
 
     public class ArrayControlFlowAnalyser
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
+
+        private readonly Dictionary<string, Dictionary<string, HashSet<string>>> mayBeDerivedFrom = new Dictionary<string, Dictionary<string, HashSet<string>>>();
+
+        private readonly HashSet<string> arraysWhichMayAffectControlFlow = new HashSet<string>();
 
         private bool procedureChanged;
-
-        private Dictionary<string, Dictionary<string, HashSet<string>>> mayBeDerivedFrom;
-
-        private HashSet<string> arraysWhichMayAffectControlFlow;
 
         public ArrayControlFlowAnalyser(GPUVerifier verifier)
         {
             this.verifier = verifier;
-            mayBeDerivedFrom = new Dictionary<string, Dictionary<string, HashSet<string>>>();
-            arraysWhichMayAffectControlFlow = new HashSet<string>();
         }
 
         public void Analyse()
@@ -160,7 +158,7 @@ namespace GPUVerify
                     {
                         if (assignCmd.Lhss[i] is SimpleAssignLhs)
                         {
-                            SimpleAssignLhs lhs = assignCmd.Lhss[i] as SimpleAssignLhs;
+                            SimpleAssignLhs lhs = (SimpleAssignLhs)assignCmd.Lhss[i];
                             Expr rhs = assignCmd.Rhss[i];
 
                             VariablesOccurringInExpressionVisitor visitor = new VariablesOccurringInExpressionVisitor();
@@ -199,7 +197,7 @@ namespace GPUVerify
                         Implementation calleeImplementation = verifier.GetImplementation(callCmd.callee);
                         if (calleeImplementation != null)
                         {
-                            for (int i = 0; i < calleeImplementation.InParams.Count(); i++)
+                            for (int i = 0; i < calleeImplementation.InParams.Count; i++)
                             {
                                 VariablesOccurringInExpressionVisitor visitor = new VariablesOccurringInExpressionVisitor();
                                 visitor.VisitExpr(callCmd.Ins[i]);
@@ -217,7 +215,7 @@ namespace GPUVerify
                                 }
                             }
 
-                            for (int i = 0; i < calleeImplementation.OutParams.Count(); i++)
+                            for (int i = 0; i < calleeImplementation.OutParams.Count; i++)
                             {
                                 foreach (string s in mayBeDerivedFrom[callCmd.callee][calleeImplementation.OutParams[i].Name])
                                 {
@@ -247,7 +245,7 @@ namespace GPUVerify
 
             if (bb.ec is WhileCmd)
             {
-                WhileCmd wc = bb.ec as WhileCmd;
+                WhileCmd wc = (WhileCmd)bb.ec;
 
                 ExprMayAffectControlFlow(impl.Name, wc.Guard);
 
@@ -255,7 +253,7 @@ namespace GPUVerify
             }
             else if (bb.ec is IfCmd)
             {
-                IfCmd ifCmd = bb.ec as IfCmd;
+                IfCmd ifCmd = (IfCmd)bb.ec;
 
                 ExprMayAffectControlFlow(impl.Name, ifCmd.Guard);
 

@@ -109,7 +109,7 @@ namespace GPUVerify
 
         public static Program ParseBoogieProgram(List<string> fileNames, bool suppressTraceOutput)
         {
-            CommandLineOptions.Install(new Microsoft.Boogie.CommandLineOptions());
+            CommandLineOptions.Install(new CommandLineOptions());
 
             Program program = null;
             bool okay = true;
@@ -118,11 +118,10 @@ namespace GPUVerify
                 string bplFileName = fileNames[fileId];
 
                 Program programSnippet;
-                int errorCount;
                 try
                 {
                     var defines = new List<string> { "FILE_" + fileId };
-                    errorCount = Parser.Parse(bplFileName, defines, out programSnippet);
+                    var errorCount = Parser.Parse(bplFileName, defines, out programSnippet);
                     if (programSnippet == null || errorCount != 0)
                     {
                         Console.WriteLine("{0} parse errors detected in {1}", errorCount, bplFileName);
@@ -141,7 +140,7 @@ namespace GPUVerify
                 {
                     program = programSnippet;
                 }
-                else if (programSnippet != null)
+                else
                 {
                     program.AddTopLevelDeclarations(programSnippet.TopLevelDeclarations);
                 }

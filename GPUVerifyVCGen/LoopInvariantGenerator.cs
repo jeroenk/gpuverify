@@ -18,16 +18,15 @@ namespace GPUVerify
 
     public class LoopInvariantGenerator
     {
-        private GPUVerifier verifier;
-        private Implementation impl;
-        private List<InvariantGenerationRule> invariantGenerationRules;
+        private readonly GPUVerifier verifier;
+        private readonly Implementation impl;
+        private readonly List<InvariantGenerationRule> invariantGenerationRules = new List<InvariantGenerationRule>();
 
         private LoopInvariantGenerator(GPUVerifier verifier, Implementation impl)
         {
             this.verifier = verifier;
             this.impl = impl;
 
-            invariantGenerationRules = new List<InvariantGenerationRule>();
             invariantGenerationRules.Add(new PowerOfTwoInvariantGenerator(verifier));
         }
 
@@ -215,7 +214,7 @@ namespace GPUVerify
 
         private static Expr MaybeExtractGuard(GPUVerifier verifier, Implementation impl, Block b)
         {
-            if (b.Cmds.Count() > 0)
+            if (b.Cmds.Any())
             {
                 var a = b.Cmds[0] as AssumeCmd;
                 if (a != null && QKeyValue.FindBoolAttribute(a.Attributes, "partition"))
@@ -246,7 +245,7 @@ namespace GPUVerify
 
         private static void GenerateCandidateForNonUniformGuardVariables(GPUVerifier verifier, Implementation impl, IRegion region)
         {
-            if (!verifier.ContainsBarrierCall(region) && !GPUVerifyVCGenCommandLineOptions.WarpSync)
+            if (!GPUVerifier.ContainsBarrierCall(region) && !GPUVerifyVCGenCommandLineOptions.WarpSync)
                 return;
 
             HashSet<Variable> partitionVars = region.PartitionVariablesOfHeader();
@@ -348,7 +347,7 @@ namespace GPUVerify
             foreach (string iv in rsa.StridedInductionVariables(regionId))
             {
                 var sc = rsa.GetStrideConstraint(iv, regionId);
-                Variable ivVariable = impl.LocVars.Where(item => item.Name == iv).First();
+                Variable ivVariable = impl.LocVars.First(item => item.Name == iv);
                 var ivExpr = new IdentifierExpr(Token.NoToken, ivVariable);
                 var ivPred = sc.MaybeBuildPredicate(verifier, ivExpr);
 
@@ -479,7 +478,7 @@ namespace GPUVerify
 
         private void AddBarrierDivergenceCandidates(HashSet<Variable> localVars, Implementation impl, IRegion region)
         {
-            if (!verifier.ContainsBarrierCall(region) && !GPUVerifyVCGenCommandLineOptions.WarpSync)
+            if (!GPUVerifier.ContainsBarrierCall(region) && !GPUVerifyVCGenCommandLineOptions.WarpSync)
                 return;
 
             Expr guard = region.Guard();
@@ -521,7 +520,7 @@ namespace GPUVerify
                     if (!assignmentCounts.ContainsKey(lv) || assignmentCounts[lv] <= 1)
                         continue;
 
-                    if (!verifier.ContainsNamedVariable(region.GetModifiedVariables(), lv))
+                    if (!GPUVerifier.ContainsNamedVariable(region.GetModifiedVariables(), lv))
                         continue;
 
                     AddPredicatedEqualityCandidateInvariant(region, loopPredicate, new LocalVariable(Token.NoToken, new TypedIdent(Token.NoToken, lv, Type.Int)));
@@ -532,7 +531,7 @@ namespace GPUVerify
         private static bool IsDisjunctionOfPredicates(Expr guard)
         {
             NAryExpr nary = guard as NAryExpr;
-            if (nary == null || nary.Args.Count() != 2)
+            if (nary == null || nary.Args.Count != 2)
                 return false;
 
             BinaryOperator binOp = nary.Fun as BinaryOperator;

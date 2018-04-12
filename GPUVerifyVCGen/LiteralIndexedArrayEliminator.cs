@@ -16,8 +16,8 @@ namespace GPUVerify
 
     public class LiteralIndexedArrayEliminator
     {
-        private GPUVerifier verifier;
-        private Dictionary<string, GlobalVariable> arrayCache = new Dictionary<string, GlobalVariable>();
+        private readonly GPUVerifier verifier;
+        private readonly Dictionary<string, GlobalVariable> arrayCache = new Dictionary<string, GlobalVariable>();
 
         public LiteralIndexedArrayEliminator(GPUVerifier verifier)
         {
@@ -97,7 +97,7 @@ namespace GPUVerify
 
             public override Expr VisitNAryExpr(NAryExpr node)
             {
-                if (node.Fun is MapSelect && node.Args.Count() == 2)
+                if (node.Fun is MapSelect && node.Args.Count == 2)
                 {
                     var map = node.Args[0] as IdentifierExpr;
                     if (map != null)
@@ -121,12 +121,12 @@ namespace GPUVerify
                         continue;
                     }
 
-                    if (lhs.Indexes.Count() != 1)
+                    if (lhs.Indexes.Count != 1)
                     {
                         continue;
                     }
 
-                    var map = (lhs.Map as SimpleAssignLhs).AssignedVariable;
+                    var map = ((SimpleAssignLhs)lhs.Map).AssignedVariable;
                     if (LiteralIndexedArrays.ContainsKey(map.Name))
                     {
                         UpdateIndexingInfo(lhs.Indexes[0], map.Name);
@@ -152,8 +152,8 @@ namespace GPUVerify
 
         private class EliminatorVisitor : Duplicator
         {
-            private Dictionary<string, HashSet<string>> arrays;
-            private LiteralIndexedArrayEliminator arrayEliminator;
+            private readonly Dictionary<string, HashSet<string>> arrays;
+            private readonly LiteralIndexedArrayEliminator arrayEliminator;
 
             public EliminatorVisitor(
                 Dictionary<string, HashSet<string>> arrays, LiteralIndexedArrayEliminator arrayEliminator)
@@ -164,7 +164,7 @@ namespace GPUVerify
 
             public override Expr VisitNAryExpr(NAryExpr node)
             {
-                if (node.Fun is MapSelect && node.Args.Count() == 2)
+                if (node.Fun is MapSelect && node.Args.Count == 2)
                 {
                     var map = node.Args[0] as IdentifierExpr;
                     if (map != null)
@@ -185,7 +185,7 @@ namespace GPUVerify
             private AssignLhs TransformLhs(AssignLhs lhs)
             {
                 var mapLhs = lhs as MapAssignLhs;
-                if (mapLhs == null || !(mapLhs.Map is SimpleAssignLhs) || mapLhs.Indexes.Count() != 1)
+                if (mapLhs == null || !(mapLhs.Map is SimpleAssignLhs) || mapLhs.Indexes.Count != 1)
                 {
                     return (AssignLhs)Visit(lhs);
                 }
@@ -209,8 +209,8 @@ namespace GPUVerify
             {
                 return new AssignCmd(
                     node.tok,
-                    node.Lhss.Select(item => TransformLhs(item)).ToList(),
-                    node.Rhss.Select(item => VisitExpr(item)).ToList());
+                    node.Lhss.Select(TransformLhs).ToList(),
+                    node.Rhss.Select(VisitExpr).ToList());
             }
         }
     }

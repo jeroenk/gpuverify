@@ -49,7 +49,7 @@ namespace GPUVerify
             return node;
         }
 
-        private void CheckMapIndex(MapAssignLhs node)
+        private static void CheckMapIndex(MapAssignLhs node)
         {
             if (node.Indexes.Count > 1)
             {

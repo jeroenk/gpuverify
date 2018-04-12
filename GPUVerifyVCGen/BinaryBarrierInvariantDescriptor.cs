@@ -17,13 +17,12 @@ namespace GPUVerify
 
     public class BinaryBarrierInvariantDescriptor : BarrierInvariantDescriptor
     {
-        private List<Tuple<Expr, Expr>> instantiationExprPairs;
+        private readonly List<Tuple<Expr, Expr>> instantiationExprPairs = new List<Tuple<Expr, Expr>>();
 
         public BinaryBarrierInvariantDescriptor(
             Expr predicate, Expr barrierInvariant, QKeyValue sourceLocationInfo, KernelDualiser dualiser, string procName, GPUVerifier verifier)
             : base(predicate, barrierInvariant, sourceLocationInfo, dualiser, procName, verifier)
         {
-            instantiationExprPairs = new List<Tuple<Expr, Expr>>();
         }
 
         public void AddInstantiationExprPair(Expr first, Expr second)
@@ -72,9 +71,9 @@ namespace GPUVerify
 
         private class ThreadPairInstantiator : Duplicator
         {
-            private GPUVerifier verifier;
-            private Tuple<Expr, Expr> instantiationExprs;
-            private int thread;
+            private readonly GPUVerifier verifier;
+            private readonly Tuple<Expr, Expr> instantiationExprs;
+            private readonly int thread;
 
             public ThreadPairInstantiator(GPUVerifier verifier, Expr instantiationExpr1, Expr instantiationExpr2, int thread)
             {
@@ -112,7 +111,7 @@ namespace GPUVerify
             {
                 if (node.Fun is FunctionCall)
                 {
-                    FunctionCall call = node.Fun as FunctionCall;
+                    FunctionCall call = (FunctionCall)node.Fun;
 
                     // Alternate instantiation order for "other thread" functions.
                     // Note that we do not alternate the "Thread" field, as we are not switching the

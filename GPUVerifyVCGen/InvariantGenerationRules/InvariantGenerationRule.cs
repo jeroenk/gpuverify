@@ -15,7 +15,7 @@ namespace GPUVerify.InvariantGenerationRules
     {
         protected GPUVerifier Verifier { get; }
 
-        public InvariantGenerationRule(GPUVerifier verifier)
+        protected InvariantGenerationRule(GPUVerifier verifier)
         {
             this.Verifier = verifier;
         }

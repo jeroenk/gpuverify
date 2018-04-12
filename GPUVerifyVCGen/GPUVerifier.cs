@@ -22,16 +22,16 @@ namespace GPUVerify
 
     public class GPUVerifier : CheckingContext
     {
-        private string outputFilename;
-        private ResolutionContext resContext;
+        private readonly string outputFilename;
+        private readonly ResolutionContext resContext;
 
-        public Program Program { get; private set; }
+        public Program Program { get; }
 
-        public IntegerRepresentation IntRep { get; private set; }
+        public IntegerRepresentation IntRep { get; }
 
         public Dictionary<Procedure, Implementation> KernelProcedures { get; private set; }
 
-        public Dictionary<string, string> GlobalArraySourceNames { get; private set; }
+        public Dictionary<string, string> GlobalArraySourceNames { get; }
 
         private HashSet<Procedure> barrierProcedures = new HashSet<Procedure>();
         private Dictionary<Tuple<Variable, AccessType, bool>, Procedure> warpSyncs = new Dictionary<Tuple<Variable, AccessType, bool>, Procedure>();
@@ -263,7 +263,7 @@ namespace GPUVerify
             return candidates.Single().TypedIdent.Type;
         }
 
-        public bool IsKernelProcedure(Procedure proc)
+        public static bool IsKernelProcedure(Procedure proc)
         {
             return QKeyValue.FindBoolAttribute(proc.Attributes, "kernel");
         }
@@ -313,59 +313,6 @@ namespace GPUVerify
                     new List<IdentifierExpr>(),
                     new List<Ensures>(),
                     new QKeyValue(Token.NoToken, "barrier", new List<object>(), null));
-                Program.AddTopLevelDeclaration(p);
-                resContext.AddProcedure(p);
-            }
-
-            return p;
-        }
-
-        private Procedure FindOrCreateBarrierInvariantProcedure()
-        {
-            var p = CheckSingleInstanceOfAttributedProcedure("barrier_invariant");
-            if (p == null)
-            {
-                var inParams = new List<Variable>
-                {
-                    new Formal(Token.NoToken, new TypedIdent(Token.NoToken, "__cond", Microsoft.Boogie.Type.Bool), true)
-                };
-                p = new Procedure(
-                    Token.NoToken,
-                    "barrier_invariant",
-                    new List<TypeVariable>(),
-                    inParams,
-                    new List<Variable>(),
-                    new List<Requires>(),
-                    new List<IdentifierExpr>(),
-                    new List<Ensures>(),
-                    new QKeyValue(Token.NoToken, "barrier_invariant", new List<object>(), null));
-                Program.AddTopLevelDeclaration(p);
-                resContext.AddProcedure(p);
-            }
-
-            return p;
-        }
-
-        private Procedure FindOrCreateBarrierInvariantInstantiationProcedure()
-        {
-            var p = CheckSingleInstanceOfAttributedProcedure("barrier_invariant_instantiation");
-            if (p == null)
-            {
-                var inParams = new List<Variable>
-                {
-                    new Formal(Token.NoToken, new TypedIdent(Token.NoToken, "__t1", SizeTType), true),
-                    new Formal(Token.NoToken, new TypedIdent(Token.NoToken, "__t2", SizeTType), true)
-                };
-                p = new Procedure(
-                    Token.NoToken,
-                    "barrier_invariant_instantiation",
-                    new List<TypeVariable>(),
-                    inParams,
-                    new List<Variable>(),
-                    new List<Requires>(),
-                    new List<IdentifierExpr>(),
-                    new List<Ensures>(),
-                    new QKeyValue(Token.NoToken, "barrier_invariant_instantiation", new List<object>(), null));
                 Program.AddTopLevelDeclaration(p);
                 resContext.AddProcedure(p);
             }
@@ -507,7 +454,7 @@ namespace GPUVerify
             {
                 if (QKeyValue.FindBoolAttribute(c.Attributes, "atomic"))
                 {
-                    Debug.Assert(c.Ins.Count() >= 1);
+                    Debug.Assert(c.Ins.Any());
                     var ie = c.Ins[0] as IdentifierExpr;
                     Debug.Assert(ie != null);
                     Debug.Assert(KernelArrayInfo.GetGlobalAndGroupSharedArrays(true).Contains(ie.Decl));
@@ -725,11 +672,6 @@ namespace GPUVerify
             EmitProgram(outputFilename);
         }
 
-        private void RemoveAtomicCalls()
-        {
-            throw new NotImplementedException();
-        }
-
         private void PropagateProcedureWideInvariants()
         {
             foreach (var impl in Program.Implementations.ToList())
@@ -797,12 +739,12 @@ namespace GPUVerify
             }
         }
 
-        private int DeepestSubregion(IRegion r)
+        private static int DeepestSubregion(IRegion r)
         {
-            if (r.SubRegions().Where(item => item.Identifier() != r.Identifier()).Count() == 0)
+            if (r.SubRegions().All(item => item.Identifier() == r.Identifier()))
                 return 0;
 
-            return 1 + r.SubRegions().Where(item => item.Identifier() != r.Identifier()).Select(item => DeepestSubregion(item)).Max();
+            return 1 + r.SubRegions().Where(item => item.Identifier() != r.Identifier()).Select(DeepestSubregion).Max();
         }
 
         private void PrintLoopStatistics()
@@ -889,7 +831,7 @@ namespace GPUVerify
             {
                 if (uni.IsUniform(b.Name))
                 {
-                    b.AddAttribute("safe_barrier", new object[] { });
+                    b.AddAttribute("safe_barrier");
                 }
             }
         }
@@ -940,8 +882,7 @@ namespace GPUVerify
 
         private void NonDeterminiseUninterpretedFunctions()
         {
-            var ufRemover = new UninterpretedFunctionRemover();
-            ufRemover.Eliminate(Program);
+            UninterpretedFunctionRemover.Eliminate(Program);
         }
 
         private void EliminateLiteralIndexedPrivateArrays()
@@ -1006,7 +947,7 @@ namespace GPUVerify
             return cfg.Predecessors(header).Where(item => !cfg.BackEdgeNodes(header).Contains(item));
         }
 
-        private void AppendStateCaptureToBlocks(string stateNamePrefix, int loopCounter, IEnumerable<Block> blocks)
+        private static void AppendStateCaptureToBlocks(string stateNamePrefix, int loopCounter, IEnumerable<Block> blocks)
         {
             int counter = 0;
             foreach (var n in blocks)
@@ -1228,7 +1169,7 @@ namespace GPUVerify
             proc.Ensures.Add(new Ensures(false, Expr.Imp(existentialBoolean, e)));
         }
 
-        public bool ContainsNamedVariable(HashSet<Variable> variables, string name)
+        public static bool ContainsNamedVariable(HashSet<Variable> variables, string name)
         {
             foreach (Variable v in variables)
             {
@@ -1313,66 +1254,6 @@ namespace GPUVerify
             return null;
         }
 
-        public bool KernelHasIdX()
-        {
-            return IdX != null;
-        }
-
-        public bool KernelHasIdY()
-        {
-            return IdY != null;
-        }
-
-        public bool KernelHasIdZ()
-        {
-            return IdZ != null;
-        }
-
-        public bool KernelHasGroupIdX()
-        {
-            return groupIdX != null;
-        }
-
-        public bool KernelHasGroupIdY()
-        {
-            return groupIdY != null;
-        }
-
-        public bool KernelHasGroupIdZ()
-        {
-            return groupIdZ != null;
-        }
-
-        public bool KernelHasNumGroupsX()
-        {
-            return numGroupsX != null;
-        }
-
-        public bool KernelHasNumGroupsY()
-        {
-            return numGroupsY != null;
-        }
-
-        public bool KernelHasNumGroupsZ()
-        {
-            return numGroupsZ != null;
-        }
-
-        public bool KernelHasGroupSizeX()
-        {
-            return groupSizeX != null;
-        }
-
-        public bool KernelHasGroupSizeY()
-        {
-            return groupSizeY != null;
-        }
-
-        public bool KernelHasGroupSizeZ()
-        {
-            return groupSizeZ != null;
-        }
-
         private void GenerateStandardKernelContract()
         {
             RaceInstrumenter.AddKernelPrecondition();
@@ -1412,7 +1293,7 @@ namespace GPUVerify
                 {
                     bool foundNonUniform = false;
                     int indexOfFirstNonUniformParameter;
-                    for (indexOfFirstNonUniformParameter = 0; indexOfFirstNonUniformParameter < proc.InParams.Count(); indexOfFirstNonUniformParameter++)
+                    for (indexOfFirstNonUniformParameter = 0; indexOfFirstNonUniformParameter < proc.InParams.Count; indexOfFirstNonUniformParameter++)
                     {
                         if (!UniformityAnalyser.IsUniform(proc.Name, Utilities.StripThreadIdentifier(proc.InParams[indexOfFirstNonUniformParameter].Name)))
                         {
@@ -1424,7 +1305,7 @@ namespace GPUVerify
                     if (foundNonUniform)
                     {
                         // I have a feeling this will never be reachable
-                        int numberOfNonUniformParameters = (proc.InParams.Count() - indexOfFirstNonUniformParameter) / 2;
+                        int numberOfNonUniformParameters = (proc.InParams.Count - indexOfFirstNonUniformParameter) / 2;
                         for (int i = indexOfFirstNonUniformParameter; i < numberOfNonUniformParameters; i++)
                         {
                             proc.Requires.Add(new Requires(
@@ -1443,7 +1324,7 @@ namespace GPUVerify
             return !Program.Implementations.Select(i => i.Name).Contains(proc.Name);
         }
 
-        public bool ProcedureIsInlined(Procedure proc)
+        public static bool ProcedureIsInlined(Procedure proc)
         {
             return QKeyValue.FindIntAttribute(proc.Attributes, "inline", -1) == 1;
         }
@@ -1451,7 +1332,7 @@ namespace GPUVerify
         public Expr ThreadsInSameWarp()
         {
             Expr warpsize = IntRep.GetLiteral(GPUVerifyVCGenCommandLineOptions.WarpSize, IdType);
-            IEnumerable<Expr> tids = (new int[] { 1, 2 }).Select(x => FlattenedThreadId(x));
+            IEnumerable<Expr> tids = (new int[] { 1, 2 }).Select(FlattenedThreadId);
             Expr[] sides = tids.Select(x => IntRep.MakeDiv(x, warpsize)).ToArray();
             return Expr.Eq(sides[0], sides[1]);
         }
@@ -1474,11 +1355,6 @@ namespace GPUVerify
                     Expr.Eq(
                         new IdentifierExpr(Token.NoToken, MakeGroupId("Z", 1)),
                         new IdentifierExpr(Token.NoToken, MakeGroupId("Z", 2))));
-        }
-
-        public static int GetThreadSuffix(string p)
-        {
-            return int.Parse(p.Substring(p.IndexOf("$") + 1, p.Length - (p.IndexOf("$") + 1)));
         }
 
         private void GeneratePreconditionsForDimension(string dimension)
@@ -1883,35 +1759,10 @@ namespace GPUVerify
             return variables.Any(v => !ArrayModelledAdversarially(v));
         }
 
-        public static bool HasZDimension(Variable v)
-        {
-            if (v.TypedIdent.Type is MapType)
-            {
-                MapType mt = v.TypedIdent.Type as MapType;
-
-                if (mt.Result is MapType)
-                {
-                    MapType mt2 = mt.Result as MapType;
-                    if (mt2.Result is MapType)
-                    {
-                        Debug.Assert(!((mt2.Result as MapType).Result is MapType));
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private BigBlock HavocSharedArray(Variable v)
+        private static BigBlock HavocSharedArray(Variable v)
         {
             var havoc = new HavocCmd(Token.NoToken, new List<IdentifierExpr> { new IdentifierExpr(Token.NoToken, v) });
             return new BigBlock(Token.NoToken, null, new List<Cmd> { havoc }, null, null);
-        }
-
-        public static bool ModifiesSetContains(List<IdentifierExpr> modifies, IdentifierExpr v)
-        {
-            return modifies.Where(item => item.Name.Equals(v.Name)).Count() > 0;
         }
 
         private void AbstractSharedState()
@@ -1976,7 +1827,7 @@ namespace GPUVerify
             return result;
         }
 
-        public Variable FindOrCreateAccessHasOccurredGhostVariable(string varName, string suffix, AccessType access, Implementation impl)
+        public static Variable FindOrCreateAccessHasOccurredGhostVariable(string varName, string suffix, AccessType access, Implementation impl)
         {
             var ghostName = RaceInstrumentationUtil.MakeHasOccurredVariableName(varName, access) + "$ghost$" + suffix;
             foreach (var l in impl.LocVars)
@@ -2134,17 +1985,17 @@ namespace GPUVerify
             if (ErrorCount > 0)
                 return ErrorCount;
 
-            if (barrierProcedure.InParams.Count() != 2)
+            if (barrierProcedure.InParams.Count != 2)
                 Error(barrierProcedure, "Barrier procedure must take exactly two arguments");
             else if (!barrierProcedure.InParams[0].TypedIdent.Type.Equals(IntRep.GetIntType(1)))
                 Error(barrierProcedure, "First argument to barrier procedure must have type bv1");
             else if (!barrierProcedure.InParams[1].TypedIdent.Type.Equals(IntRep.GetIntType(1)))
                 Error(barrierProcedure, "Second argument to barrier procedure must have type bv1");
 
-            if (barrierProcedure.OutParams.Count() != 0)
+            if (barrierProcedure.OutParams.Count != 0)
                 Error(barrierProcedure, "Barrier procedure must not return any results");
 
-            if (barrierProcedure.InParams.Count() == 2)
+            if (barrierProcedure.InParams.Count == 2)
             {
                 barrierProcedureLocalFenceArgName = barrierProcedure.InParams[0].Name;
                 barrierProcedureGlobalFenceArgName = barrierProcedure.InParams[1].Name;
@@ -2226,25 +2077,19 @@ namespace GPUVerify
         public Implementation GetImplementation(string procedureName)
         {
             var relevant = Program.Implementations.Where(item => item.Name == procedureName);
-            return relevant.Count() == 0 ? null : relevant.First();
+            return !relevant.Any() ? null : relevant.First();
         }
 
         public Procedure GetProcedure(string procedureName)
         {
             var relevant = Program.TopLevelDeclarations.OfType<Procedure>().Where(item => item.Name == procedureName);
-            Debug.Assert(relevant.Count() > 0);
+            Debug.Assert(relevant.Any());
             return relevant.First();
         }
 
-        public bool ContainsBarrierCall(IRegion loop)
+        public static bool ContainsBarrierCall(IRegion loop)
         {
-            return loop.Cmds().OfType<CallCmd>().Where(item => IsBarrier(item.Proc)).Count() > 0;
-        }
-
-        public bool ContainsUnsafeBarrierCall(IRegion loop)
-        {
-            return loop.Cmds().OfType<CallCmd>().Where(item => IsBarrier(item.Proc)
-              && !QKeyValue.FindBoolAttribute(item.Proc.Attributes, "safe_barrier")).Count() > 0;
+            return loop.Cmds().OfType<CallCmd>().Any(item => IsBarrier(item.Proc));
         }
 
         public static bool IsBarrier(Procedure proc)
@@ -2451,7 +2296,7 @@ namespace GPUVerify
 
         public static void AddInlineAttribute(Declaration d)
         {
-            d.AddAttribute("inline", new object[] { new LiteralExpr(Token.NoToken, BigNum.FromInt(1)) });
+            d.AddAttribute("inline", new LiteralExpr(Token.NoToken, BigNum.FromInt(1)));
         }
 
         // This finds instances where the only atomic used on an array satisfy forall n,m f^n(x) != f^m(x)
@@ -2491,7 +2336,7 @@ namespace GPUVerify
             }
 
             // Then, for every array that only used a single monotonic atomic function, pass over the program again, logging offset constraints
-            string[] monotonics = new string[]
+            string[] monotonics =
             {
                 "__bugle_atomic_inc", "__bugle_atomic_dec", "__bugle_atomic_add", "__bugle_atomic_sub", "__atomicAdd", "__atomicSub"
             };
@@ -2555,7 +2400,7 @@ namespace GPUVerify
             string name = "_USED_" + arrayName;
 
             var candidateVariables = Program.TopLevelDeclarations.OfType<GlobalVariable>().Where(item => item.Name.Equals(name));
-            if (candidateVariables.Count() > 0)
+            if (candidateVariables.Any())
             {
                 Debug.Assert(candidateVariables.Count() == 1);
                 return candidateVariables.First();
@@ -2644,7 +2489,7 @@ namespace GPUVerify
                         }
 
                         // Manual resolving
-                        Variable arrayVar = KernelArrayInfo.GetAllArrays(true).Where(v => v.Name.Equals(array)).First();
+                        Variable arrayVar = KernelArrayInfo.GetAllArrays(true).First(v => v.Name.Equals(array));
                         Procedure proto = FindOrCreateWarpSync(arrayVar, kind, true);
                         CallCmd wsCall = new CallCmd(Token.NoToken, proto.Name, new List<Expr>(), new List<IdentifierExpr>());
                         wsCall.Proc = proto;
@@ -2678,7 +2523,7 @@ namespace GPUVerify
                         }
 
                         // Manual resolving
-                        Variable arrayVar = KernelArrayInfo.GetAllArrays(true).Where(v => v.Name.Equals(array)).First();
+                        Variable arrayVar = KernelArrayInfo.GetAllArrays(true).First(v => v.Name.Equals(array));
                         Procedure proto = FindOrCreateWarpSync(arrayVar, kind, false);
                         CallCmd wsCall = new CallCmd(Token.NoToken, proto.Name, new List<Expr>(), new List<IdentifierExpr>());
                         wsCall.Proc = proto;
@@ -2746,7 +2591,7 @@ namespace GPUVerify
                         new { Kind = AccessType.ATOMIC, Resets = new[] { AccessType.READ, AccessType.WRITE } }
                     };
 
-                    foreach (AccessType a in reset_needs.Where(x => x.Kind == kind).First().Resets)
+                    foreach (AccessType a in reset_needs.First(x => x.Kind == kind).Resets)
                     {
                         Variable accessVariable = FindOrCreateAccessHasOccurredVariable(v.Name, a);
                         then.Add(new AssumeCmd(Token.NoToken, Expr.Not(Expr.Ident(accessVariable))));
@@ -2849,8 +2694,8 @@ namespace GPUVerify
 
         public Variable FindOrCreateEnabledVariable()
         {
-            string enabledVariableName = "__enabled";
-            Variable enabledVariable = (Variable)resContext.LookUpVariable(enabledVariableName);
+            const string enabledVariableName = "__enabled";
+            Variable enabledVariable = resContext.LookUpVariable(enabledVariableName);
             if (enabledVariable == null)
             {
                 enabledVariable = new Constant(Token.NoToken, new TypedIdent(Token.NoToken, enabledVariableName, Microsoft.Boogie.Type.Bool), false);
@@ -2863,9 +2708,9 @@ namespace GPUVerify
 
         public Expr FindOrCreateAsyncNoHandleConstant()
         {
-            string name = "_ASYNC_NO_HANDLE";
+            const string name = "_ASYNC_NO_HANDLE";
             var candidates = Program.TopLevelDeclarations.OfType<Constant>().Where(item => item.Name == name);
-            if (candidates.Count() > 0)
+            if (candidates.Any())
             {
                 Debug.Assert(candidates.Count() == 1);
                 return Expr.Ident(candidates.First());
@@ -2912,7 +2757,7 @@ namespace GPUVerify
                       x => variablesToEliminate.Contains(x) ? (Expr)Expr.False : (Expr)Expr.Ident(x), c)).ToList();
                 }
 
-                ExpressionSimplifier.Simplify(Program, this.IntRep);
+                ExpressionSimplifier.Simplify(Program, IntRep);
             }
         }
     }

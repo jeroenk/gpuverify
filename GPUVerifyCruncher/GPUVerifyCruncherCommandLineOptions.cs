@@ -17,7 +17,7 @@ namespace GPUVerify
     public class GPUVerifyCruncherCommandLineOptions : GVCommandLineOptions
     {
         // Assume a sequential pipeline unless the user selects otherwise
-        public Pipeline Pipeline { get; private set; } = new Pipeline(sequential: true);
+        public Pipeline Pipeline { get; } = new Pipeline(sequential: true);
 
         public bool WriteKilledInvariantsToFile { get; private set; } = false;
 
@@ -26,11 +26,6 @@ namespace GPUVerify
         public bool EnableBarrierDivergenceChecks { get; private set; } = false;
 
         public string PipelineString { get; private set; } = null;
-
-        public GPUVerifyCruncherCommandLineOptions()
-            : base()
-        {
-        }
 
         protected override bool ParseOption(string name, CommandLineParseState ps)
         {
@@ -214,13 +209,13 @@ namespace GPUVerify
                 }
                 else
                 {
-                    Console.WriteLine(string.Format("Unknown cruncher engine: '{0}'", engine));
+                    Console.WriteLine("Unknown cruncher engine: '{0}'", engine);
                     System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
                 }
             }
         }
 
-        private Dictionary<string, string> GetParameters(
+        private static Dictionary<string, string> GetParameters(
             string engine, List<RefutationEngine.Parameter> allowedParams, List<RefutationEngine.Parameter> requiredParams, string parameterStr)
         {
             Dictionary<string, string> map = new Dictionary<string, string>();
@@ -235,7 +230,7 @@ namespace GPUVerify
                     string paramName = values[0];
                     if (allowedParams.Find(item => item.Name.Equals(paramName)) == null)
                     {
-                        Console.WriteLine(string.Format("Parameter '{0}' is not valid for cruncher engine '{1}'", paramName, engine));
+                        Console.WriteLine("Parameter '{0}' is not valid for cruncher engine '{1}'", paramName, engine);
                         System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
                     }
 
@@ -247,7 +242,7 @@ namespace GPUVerify
             {
                 if (!map.ContainsKey(param.Name))
                 {
-                    Console.WriteLine(string.Format("For cruncher engine '{0}' you must supply parameter '{1}'", engine, param.Name));
+                    Console.WriteLine("For cruncher engine '{0}' you must supply parameter '{1}'", engine, param.Name);
                     System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
                 }
             }
@@ -255,7 +250,7 @@ namespace GPUVerify
             return map;
         }
 
-        private void CheckForMutuallyExclusiveParameters(
+        private static void CheckForMutuallyExclusiveParameters(
             string engine,
             List<Tuple<RefutationEngine.Parameter, RefutationEngine.Parameter>> mutuallyExclusivePairs,
             Dictionary<string, string> parameters)
@@ -274,13 +269,13 @@ namespace GPUVerify
             }
         }
 
-        private string GetSolverValue(Dictionary<string, string> parameters)
+        private static string GetSolverValue(Dictionary<string, string> parameters)
         {
             if (parameters.ContainsKey(SMTEngine.GetSolverParameter().Name))
             {
                 if (!SMTEngine.GetSolverParameter().IsValidValue(parameters[SMTEngine.GetSolverParameter().Name]))
                 {
-                    Console.WriteLine(string.Format("Unknown solver '{0}'", parameters[SMTEngine.GetSolverParameter().Name]));
+                    Console.WriteLine("Unknown solver '{0}'", parameters[SMTEngine.GetSolverParameter().Name]);
                     System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
                 }
 
@@ -290,7 +285,7 @@ namespace GPUVerify
             return SMTEngine.GetSolverParameter().DefaultValue;
         }
 
-        private int ParseIntParameter(Dictionary<string, string> parameters, string paramName, int defaultValue)
+        private static int ParseIntParameter(Dictionary<string, string> parameters, string paramName, int defaultValue)
         {
             if (!parameters.ContainsKey(paramName))
             {
@@ -303,12 +298,12 @@ namespace GPUVerify
             }
             catch (FormatException)
             {
-                Console.WriteLine(string.Format("'{0}' must be an integer. You gave '{1}'", paramName, parameters[paramName]));
+                Console.WriteLine("'{0}' must be an integer. You gave '{1}'", paramName, parameters[paramName]);
                 System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
             }
             catch (OverflowException)
             {
-                Console.WriteLine(string.Format("'{0}' must fit into a 32-bit integer. You gave '{1}'", paramName, parameters[paramName]));
+                Console.WriteLine("'{0}' must fit into a 32-bit integer. You gave '{1}'", paramName, parameters[paramName]);
                 System.Environment.Exit((int)ToolExitCodes.OTHER_ERROR);
             }
 

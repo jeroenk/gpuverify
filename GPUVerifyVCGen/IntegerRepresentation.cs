@@ -66,7 +66,7 @@ namespace GPUVerify
         bool IsSext(Expr e, out Expr subExpr);
     }
 
-    public class IntegerRepresentationHelper
+    public static class IntegerRepresentationHelper
     {
         public static bool IsFun(Expr e, string mnemonic, out Expr lhs, out Expr rhs)
         {
@@ -122,7 +122,7 @@ namespace GPUVerify
 
     public class BVIntegerRepresentation : IntegerRepresentation
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
         public BVIntegerRepresentation(GPUVerifier verifier)
         {
@@ -288,7 +288,7 @@ namespace GPUVerify
 
     public class MathIntegerRepresentation : IntegerRepresentation
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
         public MathIntegerRepresentation(GPUVerifier verifier)
         {

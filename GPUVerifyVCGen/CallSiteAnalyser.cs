@@ -15,13 +15,12 @@ namespace GPUVerify
 
     public class CallSiteAnalyser
     {
-        private GPUVerifier verifier;
-        private Dictionary<Procedure, List<CallCmd>> callSites;
+        private readonly GPUVerifier verifier;
+        private readonly Dictionary<Procedure, List<CallCmd>> callSites = new Dictionary<Procedure, List<CallCmd>>();
 
         public CallSiteAnalyser(GPUVerifier verifier)
         {
             this.verifier = verifier;
-            callSites = new Dictionary<Procedure, List<CallCmd>>();
         }
 
         public void Analyse()
@@ -77,7 +76,7 @@ namespace GPUVerify
         {
             foreach (Procedure p in callSites.Keys)
             {
-                for (int i = 0; i < p.InParams.Count(); i++)
+                for (int i = 0; i < p.InParams.Count; i++)
                     LiteralArgumentAnalyser(p, i);
             }
         }

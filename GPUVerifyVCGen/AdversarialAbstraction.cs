@@ -16,7 +16,7 @@ namespace GPUVerify
 
     public class AdversarialAbstraction
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
 
         private List<Variable> newLocalVars = null;
         private int abstractedCallArgCounter = 0;
@@ -211,7 +211,7 @@ namespace GPUVerify
 
         private class AccessesAdversarialArrayVisitor : StandardVisitor
         {
-            private GPUVerifier verifier;
+            private readonly GPUVerifier verifier;
 
             public AccessesAdversarialArrayVisitor(GPUVerifier verifier)
             {

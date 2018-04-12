@@ -29,7 +29,7 @@ namespace GPUVerify.InvariantGenerationRules
                 string basicName = Utilities.StripThreadIdentifier(v.Name);
                 if (Verifier.MayBePowerOfTwoAnalyser.MayBePowerOfTwo(impl.Name, basicName))
                 {
-                    if (Verifier.ContainsNamedVariable(modset, basicName))
+                    if (GPUVerifier.ContainsNamedVariable(modset, basicName))
                     {
                         var type = v.TypedIdent.Type;
                         var bitwiseInv = Expr.Or(
@@ -53,7 +53,7 @@ namespace GPUVerify.InvariantGenerationRules
             // Relational Power Of Two
             var incs = modset.Where(v => Verifier.RelationalPowerOfTwoAnalyser.IsInc(impl.Name, v.Name));
             var decs = modset.Where(v => Verifier.RelationalPowerOfTwoAnalyser.IsDec(impl.Name, v.Name));
-            if (incs.ToList().Count() == 1 && decs.ToList().Count() == 1)
+            if (incs.ToList().Count == 1 && decs.ToList().Count == 1)
             {
                 var inc = incs.Single();
                 var dec = decs.Single();

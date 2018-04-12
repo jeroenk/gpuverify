@@ -22,15 +22,11 @@ namespace GPUVerify
 
     public class Memory
     {
-        private static Random random = new Random();
-        private Dictionary<string, BitVector> scalars = new Dictionary<string, BitVector>();
-        private Dictionary<string, Dictionary<SubscriptExpr, BitVector>> arrays = new Dictionary<string, Dictionary<SubscriptExpr, BitVector>>();
-        private Dictionary<string, HashSet<BitVector>> raceArrayOffsets = new Dictionary<string, HashSet<BitVector>>();
-        private Dictionary<string, MemorySpace> arrayLocations = new Dictionary<string, MemorySpace>();
-
-        public Memory()
-        {
-        }
+        private static readonly Random Random = new Random();
+        private readonly Dictionary<string, BitVector> scalars = new Dictionary<string, BitVector>();
+        private readonly Dictionary<string, Dictionary<SubscriptExpr, BitVector>> arrays = new Dictionary<string, Dictionary<SubscriptExpr, BitVector>>();
+        private readonly Dictionary<string, HashSet<BitVector>> raceArrayOffsets = new Dictionary<string, HashSet<BitVector>>();
+        private readonly Dictionary<string, MemorySpace> arrayLocations = new Dictionary<string, MemorySpace>();
 
         public void Clear()
         {
@@ -146,12 +142,12 @@ namespace GPUVerify
             Print.WarningMessage(string.Format("Location '{0}' in array '{1}' has not been initialised", subscript.ToString(), name));
 
             // Assign a random value
-            BitVector val = new BitVector(random.Next(int.MinValue, int.MaxValue));
+            BitVector val = new BitVector(Random.Next(int.MinValue, int.MaxValue));
             arrays[name][subscript] = val;
             return val;
         }
 
-        private string GetEmptySpaces(int maxLength, int length)
+        private static string GetEmptySpaces(int maxLength, int length)
         {
             int size = maxLength - length;
             StringBuilder sb = new StringBuilder(size);
@@ -213,11 +209,7 @@ namespace GPUVerify
 
         public class SubscriptExpr
         {
-            public List<BitVector> Indices { get; private set; } = new List<BitVector>();
-
-            public SubscriptExpr()
-            {
-            }
+            public List<BitVector> Indices { get; } = new List<BitVector>();
 
             public static bool Matches(SubscriptExpr expr1, SubscriptExpr expr2)
             {

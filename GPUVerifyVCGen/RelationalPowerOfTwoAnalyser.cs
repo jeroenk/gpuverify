@@ -17,8 +17,8 @@ namespace GPUVerify
 
     public class RelationalPowerOfTwoAnalyser
     {
-        private GPUVerifier verifier;
-        private Dictionary<string, Dictionary<string, Kind>> mayBePowerOfTwoInfo;
+        private readonly GPUVerifier verifier;
+        private readonly Dictionary<string, Dictionary<string, Kind>> mayBePowerOfTwoInfo = new Dictionary<string, Dictionary<string, Kind>>();
 
         private enum Kind
         {
@@ -28,7 +28,6 @@ namespace GPUVerify
         public RelationalPowerOfTwoAnalyser(GPUVerifier verifier)
         {
             this.verifier = verifier;
-            mayBePowerOfTwoInfo = new Dictionary<string, Dictionary<string, Kind>>();
         }
 
         public bool IsInc(string p, string v)
@@ -110,7 +109,7 @@ namespace GPUVerify
             Analyse(impl, verifier.RootRegion(impl));
         }
 
-        private bool IsTempVariable(Expr expr)
+        private static bool IsTempVariable(Expr expr)
         {
             if (expr is IdentifierExpr)
             {
@@ -209,7 +208,7 @@ namespace GPUVerify
             return Kind.No;
         }
 
-        private bool IsConstant(Expr expr, int x)
+        private static bool IsConstant(Expr expr, int x)
         {
             if (!(expr is LiteralExpr))
                 return false;
@@ -225,7 +224,7 @@ namespace GPUVerify
             return false;
         }
 
-        private bool IsVariable(Expr expr, Variable v)
+        private static bool IsVariable(Expr expr, Variable v)
         {
             return expr is IdentifierExpr && (expr as IdentifierExpr).Decl.Name.Equals(v.Name);
         }

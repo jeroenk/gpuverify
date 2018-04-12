@@ -22,6 +22,6 @@ namespace GPUVerify
         OTHER_ERROR = 2,
 
         // A bug in the input Boogie program will be reported
-        VERIFICATION_ERROR = 3,
+        VERIFICATION_ERROR = 3
     }
 }

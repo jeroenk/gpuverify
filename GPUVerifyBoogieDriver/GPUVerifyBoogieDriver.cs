@@ -62,10 +62,7 @@ namespace Microsoft.Boogie
                 {
                     Contract.Assert(file != null);
                     string extension = Path.GetExtension(file);
-                    if (extension != null)
-                    {
-                        extension = extension.ToLower();
-                    }
+                    extension = extension.ToLower();
 
                     if (extension != ".bpl" && extension != ".cbpl")
                     {

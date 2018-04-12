@@ -17,9 +17,9 @@ namespace GPUVerify
 
     public class ExprTree : System.Collections.IEnumerable
     {
-        private Dictionary<int, HashSet<Node>> levels = new Dictionary<int, HashSet<Node>>();
-        private List<Node> nodes = new List<Node>();
-        private Node root = null;
+        private readonly Dictionary<int, HashSet<Node>> levels = new Dictionary<int, HashSet<Node>>();
+        private readonly List<Node> nodes = new List<Node>();
+        private readonly Node root;
         private int height = 0;
         private Expr expr;
 
@@ -27,14 +27,13 @@ namespace GPUVerify
 
         public bool Initialised { get; set; } = true;
 
-        public HashSet<string> OffsetVariables { get; private set; } = new HashSet<string>();
+        public HashSet<string> OffsetVariables { get; } = new HashSet<string>();
 
         public ExprTree(Expr expr)
         {
             this.expr = expr;
             root = Node.CreateFromExpr(expr);
-            levels[0] = new HashSet<Node>();
-            levels[0].Add(root);
+            levels[0] = new HashSet<Node> { root };
             SetLevels(root, 0);
 
             // Set node IDs and see if any scalar node is a race offset variable
@@ -152,16 +151,7 @@ namespace GPUVerify
 
         private Node parent = null;
 
-        protected List<Node> Children { get; private set; } = new List<Node>();
-
-        public Node()
-        {
-        }
-
-        public bool IsLeaf()
-        {
-            return Children.Count == 0;
-        }
+        protected List<Node> Children { get; } = new List<Node>();
 
         public List<Node> GetChildren()
         {
@@ -337,12 +327,11 @@ namespace GPUVerify
 
     public class OpNode : ExprNode
     {
-        public string Op { get; private set; }
+        public string Op { get; }
 
         public OpNode(string op)
-            : base()
         {
-            this.Op = op;
+            Op = op;
         }
 
         public override string ToString()
@@ -383,17 +372,14 @@ namespace GPUVerify
 
     public class ScalarSymbolNode : ExprNode
     {
-        public string Symbol { get; private set; }
+        public string Symbol { get; }
 
-        public Microsoft.Boogie.Type Type { get; private set; }
-
-        public bool IsOffsetVariable { get; private set; }
+        public Microsoft.Boogie.Type Type { get; }
 
         public ScalarSymbolNode(string symbol, Microsoft.Boogie.Type type)
         {
             Symbol = symbol;
             Type = type;
-            IsOffsetVariable = BoogieInterpreter.RegularExpressions.OffsetVariable.IsMatch(symbol);
         }
 
         public override string ToString()
@@ -404,11 +390,11 @@ namespace GPUVerify
 
     public class MapSymbolNode : ExprNode
     {
-        public string Basename { get; private set; }
+        public string Basename { get; }
 
         public MapSymbolNode(string basename)
         {
-            this.Basename = basename;
+            Basename = basename;
         }
 
         public override string ToString()
@@ -419,9 +405,9 @@ namespace GPUVerify
 
     public class BVExtractNode : ExprNode
     {
-        public int High { get; private set; }
+        public int High { get; }
 
-        public int Low { get; private set; }
+        public int Low { get; }
 
         public BVExtractNode(Node one, int high, int low)
         {
@@ -432,7 +418,7 @@ namespace GPUVerify
 
         public override string ToString()
         {
-            return "[" + High.ToString() + ":" + Low.ToString() + "]";
+            return "[" + High + ":" + Low + "]";
         }
     }
 

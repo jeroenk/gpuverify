@@ -30,7 +30,7 @@ namespace GPUVerify
             Procedure logAccessProcedure = MakeLogAccessProcedureHeader(v, access);
 
             Debug.Assert(v.TypedIdent.Type is MapType);
-            MapType mt = v.TypedIdent.Type as MapType;
+            MapType mt = (MapType)v.TypedIdent.Type;
             Debug.Assert(mt.Arguments.Count == 1);
 
             Variable accessHasOccurredVariable =

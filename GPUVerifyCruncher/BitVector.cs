@@ -20,8 +20,8 @@ namespace GPUVerify
 
         public string Bits { get; private set; }
 
-        private static Dictionary<int, BitVector> zeroBVs = new Dictionary<int, BitVector>();
-        private static Dictionary<int, BitVector> maxBVs = new Dictionary<int, BitVector>();
+        private static readonly Dictionary<int, BitVector> ZeroBVs = new Dictionary<int, BitVector>();
+        private static readonly Dictionary<int, BitVector> MaxBVs = new Dictionary<int, BitVector>();
 
         public BitVector(int val, int width = 32)
         {
@@ -68,7 +68,7 @@ namespace GPUVerify
                 Bits = Bits.PadLeft(width, bit);
         }
 
-        private string HexToBinary(char hex)
+        private static string HexToBinary(char hex)
         {
             switch (hex)
             {
@@ -147,7 +147,7 @@ namespace GPUVerify
             BitVector item = obj as BitVector;
             if ((object)item == null)
                 return false;
-            return this.Bits.Equals(item.Bits);
+            return Bits.Equals(item.Bits);
         }
 
         public override int GetHashCode()
@@ -162,28 +162,28 @@ namespace GPUVerify
 
         public static BitVector Zero(int width)
         {
-            if (!zeroBVs.ContainsKey(width))
+            if (!ZeroBVs.ContainsKey(width))
             {
                 if (width <= 32)
-                    zeroBVs[width] = new BitVector(0, width);
+                    ZeroBVs[width] = new BitVector(0, width);
                 else
-                    zeroBVs[width] = new BitVector((long)0, width);
+                    ZeroBVs[width] = new BitVector((long)0, width);
             }
 
-            return zeroBVs[width];
+            return ZeroBVs[width];
         }
 
         public static BitVector Max(int width)
         {
-            if (!maxBVs.ContainsKey(width))
+            if (!MaxBVs.ContainsKey(width))
             {
                 if (width <= 32)
-                    maxBVs[width] = new BitVector((int)Math.Pow(2, width) - 1, width);
+                    MaxBVs[width] = new BitVector((int)Math.Pow(2, width) - 1, width);
                 else
-                    maxBVs[width] = new BitVector((long)Math.Pow(2, width) - 1, width);
+                    MaxBVs[width] = new BitVector((long)Math.Pow(2, width) - 1, width);
             }
 
-            return maxBVs[width];
+            return MaxBVs[width];
         }
 
         public static BitVector operator +(BitVector a, BitVector b)
@@ -489,7 +489,7 @@ namespace GPUVerify
         {
             Print.ConditionalExitMessage(
                 high > low,
-                "Slicing " + a.ToString() + " is not defined because the slice [" + high.ToString() + ":" + low.ToString() + "] is not valid");
+                "Slicing " + a + " is not defined because the slice [" + high + ":" + low + "] is not valid");
             int startIndex = a.Bits.Length - high;
             int length = high - low;
             string bits = a.Bits.Substring(startIndex, length);

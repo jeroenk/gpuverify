@@ -14,7 +14,7 @@ namespace GPUVerify
     using System.Text.RegularExpressions;
     using Microsoft.Boogie;
 
-    public class ExpressionSimplifier
+    public static class ExpressionSimplifier
     {
         public static void Simplify(Program program, IntegerRepresentation intRep)
         {
@@ -29,7 +29,7 @@ namespace GPUVerify
             private static readonly Regex XorPattern = new Regex(@"^BV\d*_XOR$");
             private static readonly Regex ZextPattern = new Regex(@"^BV\d*_ZEXT\d*$");
 
-            private IntegerRepresentation intRep;
+            private readonly IntegerRepresentation intRep;
 
             public Simplifier(IntegerRepresentation intRep)
             {
@@ -47,16 +47,16 @@ namespace GPUVerify
                 // modelled as mathematical integers.
                 if (node.Fun is BinaryOperator)
                 {
-                    var binOp = node.Fun as BinaryOperator;
+                    var binOp = (BinaryOperator)node.Fun;
                     if (binOp.Op == BinaryOperator.Opcode.Imp)
                     {
                         if (node.Args[0] is LiteralExpr)
                         {
-                            return node.Args[0] == Expr.False ? Expr.True : node.Args[1];
+                            return Equals(node.Args[0], Expr.False) ? Expr.True : node.Args[1];
                         }
                         else if (node.Args[1] is LiteralExpr)
                         {
-                            return node.Args[1] == Expr.True ? Expr.True : Expr.Not(node.Args[0]);
+                            return Equals(node.Args[1], Expr.True) ? Expr.True : Expr.Not(node.Args[0]);
                         }
                     }
                     else if (binOp.Op == BinaryOperator.Opcode.Neq)
@@ -134,7 +134,7 @@ namespace GPUVerify
                 {
                     if (node.Args[0] is LiteralExpr)
                     {
-                        return node.Args[0] == Expr.True ? node.Args[1] : node.Args[2];
+                        return Equals(node.Args[0], Expr.True) ? node.Args[1] : node.Args[2];
                     }
                 }
 

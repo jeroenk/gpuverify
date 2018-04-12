@@ -16,10 +16,10 @@ namespace GPUVerify
 
     public class UnstructuredRegion : IRegion
     {
-        private Graph<Block> blockGraph;
-        private Block header;
-        private Dictionary<Block, HashSet<Block>> loopNodes = new Dictionary<Block, HashSet<Block>>();
-        private Dictionary<Block, Block> innermostHeader = new Dictionary<Block, Block>();
+        private readonly Graph<Block> blockGraph;
+        private readonly Block header;
+        private readonly Dictionary<Block, HashSet<Block>> loopNodes = new Dictionary<Block, HashSet<Block>>();
+        private readonly Dictionary<Block, Block> innermostHeader = new Dictionary<Block, Block>();
         private Expr guard;
 
         public UnstructuredRegion(Program p, Implementation impl)

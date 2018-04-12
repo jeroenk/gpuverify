@@ -14,16 +14,11 @@ namespace GPUVerify
 
     public class VariablesOccurringInExpressionVisitor : StandardVisitor
     {
-        private HashSet<Variable> variables = new HashSet<Variable>();
+        private readonly HashSet<Variable> variables = new HashSet<Variable>();
 
-        public IEnumerable<Microsoft.Boogie.Variable> GetVariables()
+        public IEnumerable<Variable> GetVariables()
         {
             return variables;
-        }
-
-        public void ClearVariables()
-        {
-            variables.Clear();
         }
 
         public override Variable VisitVariable(Variable node)

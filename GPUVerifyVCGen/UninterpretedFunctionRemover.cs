@@ -15,7 +15,7 @@ namespace GPUVerify
 
     public class UninterpretedFunctionRemover
     {
-        public void Eliminate(Program program)
+        public static void Eliminate(Program program)
         {
             foreach (var impl in program.Implementations)
             {
@@ -25,7 +25,7 @@ namespace GPUVerify
                 {
                     visitor.NewBlock();
                     b.Cmds = visitor.VisitCmdSeq(b.Cmds);
-                    if (visitor.UFTemps.Last().Count() > 0)
+                    if (visitor.UFTemps.Last().Any())
                     {
                         foreach (var p in cfg.Predecessors(b))
                         {
@@ -40,7 +40,7 @@ namespace GPUVerify
             }
 
             var newDecls = program.TopLevelDeclarations
-                .Where(item => !(item is Function) || IsInterpreted(item as Function, program));
+                .Where(item => !(item is Function) || IsInterpreted((Function)item, program));
             program.ClearTopLevelDeclarations();
             program.AddTopLevelDeclarations(newDecls);
         }
@@ -71,7 +71,7 @@ namespace GPUVerify
 
         private class UFRemoverVisitor : Duplicator
         {
-            private Program prog;
+            private readonly Program prog;
             private int counter = 0;
 
             public List<HashSet<LocalVariable>> UFTemps { get; }
@@ -105,7 +105,7 @@ namespace GPUVerify
 
         private class FunctionIsReferencedVisitor : StandardVisitor
         {
-            private Function fun;
+            private readonly Function fun;
 
             public bool Found { get; private set; } = false;
 

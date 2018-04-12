@@ -15,11 +15,11 @@ namespace GPUVerify
 
     public class ConstantWriteInstrumenter : IConstantWriteInstrumenter
     {
-        private GPUVerifier verifier;
+        private readonly GPUVerifier verifier;
+
+        private readonly IKernelArrayInfo stateToCheck;
 
         private QKeyValue sourceLocationAttributes = null;
-
-        private IKernelArrayInfo stateToCheck;
 
         public ConstantWriteInstrumenter(GPUVerifier verifier)
         {
